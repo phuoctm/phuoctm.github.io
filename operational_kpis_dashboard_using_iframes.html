@@ -1,0 +1,680 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Operational KPIs — Dashboard</title>
+
+  <!--
+    ============================================================
+      REAKTOR OPERATIONAL KPIs — STANDALONE DASHBOARD (iframe edition)
+    ============================================================
+
+      One-page vertical scroll of every sheet in the Qlik
+      "Operational KPIs" production app, with a persistent
+      left-side menu for quick navigation.
+
+      Built on plain <iframe> tags + Qlik's Single Integration
+      API URLs. No qlik-embed, no OAuth client, no eval, no
+      JavaScript module loading from the Qlik tenant.
+
+    -----------  HOW IT AUTHENTICATES  -----------
+      Each iframe loads a URL on reaktor.eu.qlikcloud.com.
+      If you are already logged in to Qlik Cloud in this
+      browser, the iframes just render. If you're not, the
+      iframes try to redirect through Qlik's login — that
+      usually fails inside an iframe, so the simplest flow is:
+      open https://reaktor.eu.qlikcloud.com in another tab
+      first, sign in, then load this page.
+
+    -----------  HOW TO EDIT  -----------
+      1. To add / remove / re-order sheets, edit the SHEETS
+         array. Each entry is independent.
+      2. To set a default selection that applies to every
+         sheet (e.g. exclude trainees), edit GLOBAL_SELECTIONS.
+      3. To set selections for ONE sheet only, add a
+         `selections` array on that sheet entry. Both global
+         and per-sheet selections are concatenated into the
+         iframe's URL.
+      4. To change the iframe options (context menu, current
+         selections bar, etc.), edit `defaultOpt` or set
+         `opt` on a sheet.
+
+    -----------  ONE-TIME ADMIN ASK  -----------
+      The Qlik tenant must allow this page's origin in the
+      `frame-ancestors` Content Security Policy directive,
+      otherwise the iframes will refuse to render with an
+      X-Frame-Options-style error. This is the *only* CSP
+      directive needed for plain iframes — it does NOT involve
+      enabling eval or any script execution permission.
+
+      Admin path:
+        Qlik tenant → Administration → Content Security Policy
+        → Add → Origin: phuoctm.github.io
+        → Directives: frame-ancestors (just this one is enough)
+    ============================================================
+  -->
+
+  <script>
+    window.CONFIG = {
+      HOST:   "reaktor.eu.qlikcloud.com",
+      APP_ID: "0f609325-88ab-4369-890f-e132107013a4", // Operational KPIs (production)
+
+      // Default options on every iframe URL. See:
+      // https://help.qlik.com/en-US/cloud-services/Subsystems/Hub/Content/Sense_Hub/Embed/embed-sheet-app.htm
+      //   ctxmenu       – right-click context menu in cells
+      //   currsel       – current-selections bar at top of iframe
+      //   nointeraction – read-only, no selecting
+      //   noselections  – hide the selections bar
+      //   noanimate     – disable animations
+      defaultOpt: "ctxmenu,currsel"
+    };
+
+    // Selections that apply to EVERY sheet on this page.
+    // Concatenated with each sheet's own `selections` before
+    // building the URL. Reaktor's default view excludes trainees.
+    window.GLOBAL_SELECTIONS = [
+      { field: "Regular/Trainee", values: ["Regular"] }
+    ];
+
+    // Each entry becomes one section.
+    // Required: id, title.
+    // Optional:
+    //   subtitle    – short caption shown under the title
+    //   height      – CSS height of the iframe (default 88vh)
+    //   opt         – override default iframe options
+    //   selections  – array of {field, values} to apply to this sheet's URL.
+    //                 Each entry becomes a separate &select=field,v1,v2,...
+    window.SHEETS = [
+      { id: "DcaqT",
+        title: "Headcount & Capacity",
+        subtitle: "FTEs, joiners, leavers, churn" },
+
+      { id: "GYVgkP",
+        title: "Billable Work",
+        subtitle: "Billable hours by unit, client, internal vs subcontractor" },
+
+      { id: "b36c53ec-2a2a-48d2-9f3a-a648f5eac6ea",
+        title: "Work Entries Details",
+        subtitle: "Hours by entry type, project code, hour class" },
+
+      { id: "2a497d7c-bc6f-4c84-a200-59ef74d3de09",
+        title: "Assignments",
+        subtitle: "Current allocations, time-to-first-assignment" },
+
+      { id: "b169dfd1-b98b-41b6-bfd5-e2f62eeb8582",
+        title: "Pool",
+        subtitle: "Free capacity, daily trends, longest in pool" },
+
+      { id: "82876d70-12a2-4676-83cb-dfc02bea3ab8",
+        title: "Billing Ratio & Chargeability",
+        subtitle: "Headline ratios, rolling-12 averages" },
+
+      { id: "FdJmPM",
+        title: "CaC-% by Employee",
+        subtitle: "Per-person chargeability breakdowns" },
+
+      { id: "upStAc",
+        title: "CaC-% by Hour Class",
+        subtitle: "Non-billable hours grouped by hour code class" },
+
+      { id: "e4e2d52e-1f80-4bfc-9b65-e8e9ea3ff0ad",
+        title: "Billing Ratio by Employee",
+        subtitle: "Per-person billing ratio and hour breakdowns" },
+
+      { id: "28ecf415-a7f4-4a24-ac3b-a8cc1364b724",
+        title: "Sick Leaves",
+        subtitle: "Sick days/hours, trends, per-country" },
+
+      { id: "b27ad7f5-0089-4cd1-ab91-996eb1658160",
+        title: "Flextime",
+        subtitle: "Overtime balances, monthly changes, by unit" },
+
+      { id: "7990bbf5-5e2b-4666-a380-ca9d1a2f83de",
+        title: "Avg Price & Profitability",
+        subtitle: "Hourly prices, sales margin, subcontracting" }
+    ];
+
+    /* EXAMPLES of sheet-specific selections — copy and adapt:
+
+       // Pool page filtered to Finland:
+       { id: "b169dfd1-b98b-41b6-bfd5-e2f62eeb8582",
+         title: "Pool — Finland only",
+         selections: [{ field: "Country", values: ["Finland"] }] }
+
+       // Sick leaves filtered to the Aero unit, last year:
+       { id: "28ecf415-a7f4-4a24-ac3b-a8cc1364b724",
+         title: "Sick Leaves — Aero 2025",
+         selections: [
+           { field: "Home Unit", values: ["Aero"] },
+           { field: "Year",      values: ["2025"] }
+         ] }
+    */
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300..900&family=Geist:wght@300..700&family=Geist+Mono:wght@400..600&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg:          #F7F4EE;
+      --surface:     #FFFFFF;
+      --surface-2:   #FBF8F2;
+      --ink:         #16140E;
+      --ink-soft:    #2C281E;
+      --muted:       #6B6358;
+      --muted-2:     #948B7E;
+      --border:      #E5DFD3;
+      --border-strong:#C9C0B0;
+      --accent:      #D54B17;
+      --accent-soft: #F2E2D6;
+
+      --sidebar-w:   300px;
+      --content-pad: clamp(24px, 4vw, 56px);
+
+      --font-display: "Fraunces", ui-serif, Georgia, serif;
+      --font-body:    "Geist", ui-sans-serif, system-ui, sans-serif;
+      --font-mono:    "Geist Mono", ui-monospace, monospace;
+    }
+
+    *,*::before,*::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: var(--font-body);
+      font-size: 15px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+
+    body::before {
+      content: "";
+      position: fixed; inset: 0;
+      pointer-events: none;
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.04 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+      opacity: 0.6;
+      z-index: 1;
+      mix-blend-mode: multiply;
+    }
+
+    /* Sidebar */
+    aside.menu {
+      position: fixed;
+      top: 0; left: 0;
+      width: var(--sidebar-w);
+      height: 100vh;
+      padding: 32px 24px 24px 28px;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      z-index: 10;
+      overflow-y: auto;
+    }
+    .menu-brand {
+      display: flex; align-items: baseline; gap: 8px;
+      font-family: var(--font-mono);
+      font-size: 11px; letter-spacing: 0.12em;
+      text-transform: uppercase; color: var(--muted);
+      margin-bottom: 6px;
+    }
+    .menu-brand-dot {
+      width: 6px; height: 6px;
+      background: var(--accent);
+      border-radius: 50%;
+      display: inline-block;
+      transform: translateY(-1px);
+    }
+    .menu-title {
+      font-family: var(--font-display);
+      font-weight: 400; font-size: 28px;
+      letter-spacing: -0.01em; line-height: 1.05;
+      margin: 0 0 8px 0; color: var(--ink);
+    }
+    .menu-title em {
+      font-style: italic; font-weight: 300;
+      color: var(--accent);
+    }
+    .menu-sub {
+      font-size: 12.5px; color: var(--muted);
+      margin-bottom: 24px;
+    }
+
+    .auth-card {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 10px 12px;
+      margin-bottom: 20px;
+      font-size: 12px;
+      line-height: 1.5;
+      color: var(--ink-soft);
+    }
+    .auth-card a {
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: 500;
+      border-bottom: 1px solid var(--accent-soft);
+    }
+    .auth-card a:hover { border-bottom-color: var(--accent); }
+
+    .menu-list { list-style: none; padding: 0; margin: 0; }
+    .menu-list li { margin: 0; }
+    .menu-list a {
+      display: grid;
+      grid-template-columns: 22px 1fr;
+      align-items: baseline;
+      gap: 10px;
+      padding: 9px 10px 9px 6px;
+      text-decoration: none;
+      color: var(--ink-soft);
+      border-radius: 4px;
+      transition: background 0.15s ease, color 0.15s ease;
+      position: relative;
+    }
+    .menu-list a:hover {
+      background: var(--surface-2);
+      color: var(--ink);
+    }
+    .menu-list a .num {
+      font-family: var(--font-mono);
+      font-size: 10.5px;
+      color: var(--muted-2);
+      letter-spacing: 0.05em;
+    }
+    .menu-list a .label {
+      font-size: 13.5px; line-height: 1.3;
+    }
+    .menu-list a.active {
+      background: var(--surface-2); color: var(--ink);
+    }
+    .menu-list a.active::before {
+      content: "";
+      position: absolute;
+      left: -28px; top: 50%;
+      transform: translateY(-50%);
+      width: 3px; height: 22px;
+      background: var(--accent);
+      border-radius: 2px;
+    }
+    .menu-list a.active .num { color: var(--accent); }
+
+    .menu-footer {
+      margin-top: auto;
+      padding-top: 24px;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      color: var(--muted-2);
+      text-transform: uppercase;
+      line-height: 1.6;
+    }
+    .menu-footer a {
+      color: var(--muted);
+      text-decoration: none;
+      border-bottom: 1px dotted var(--border-strong);
+    }
+    .menu-footer a:hover { color: var(--accent); }
+
+    /* Main */
+    main {
+      margin-left: var(--sidebar-w);
+      padding: 0 var(--content-pad) 80px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .hero {
+      padding: 64px 0 48px;
+      border-bottom: 1px solid var(--border);
+    }
+    .hero-meta {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 18px;
+      display: flex;
+      gap: 18px;
+      flex-wrap: wrap;
+    }
+    .hero-meta span { display: inline-flex; gap: 6px; align-items: center; }
+    .hero-meta .dot { color: var(--accent); }
+    .hero h1 {
+      font-family: var(--font-display);
+      font-weight: 300;
+      font-size: clamp(40px, 5.5vw, 72px);
+      line-height: 1;
+      letter-spacing: -0.025em;
+      margin: 0 0 18px 0;
+      color: var(--ink);
+    }
+    .hero h1 em {
+      font-style: italic; font-weight: 300;
+      color: var(--accent);
+    }
+    .hero-lead {
+      max-width: 640px;
+      font-size: 16.5px;
+      line-height: 1.55;
+      color: var(--ink-soft);
+    }
+
+    /* Sheet section */
+    section.sheet {
+      padding: 56px 0 56px;
+      border-bottom: 1px solid var(--border);
+      scroll-margin-top: 20px;
+    }
+    section.sheet:last-of-type { border-bottom: none; }
+
+    .sheet-head {
+      display: grid;
+      grid-template-columns: 90px 1fr auto;
+      gap: 24px;
+      align-items: start;
+      margin-bottom: 28px;
+    }
+    .sheet-num {
+      font-family: var(--font-display);
+      font-weight: 300;
+      font-size: 64px;
+      line-height: 1;
+      color: var(--accent);
+      letter-spacing: -0.03em;
+      font-feature-settings: "tnum" 1;
+    }
+    .sheet-title-block h2 {
+      font-family: var(--font-display);
+      font-weight: 400;
+      font-size: clamp(28px, 3.2vw, 40px);
+      line-height: 1.05;
+      letter-spacing: -0.015em;
+      margin: 14px 0 8px;
+      color: var(--ink);
+    }
+    .sheet-subtitle {
+      color: var(--muted);
+      font-size: 15px;
+      max-width: 660px;
+      margin: 0 0 10px;
+    }
+    .sheet-id {
+      font-family: var(--font-mono);
+      font-size: 10.5px;
+      letter-spacing: 0.05em;
+      color: var(--muted-2);
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .sheet-id code {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      padding: 2px 7px;
+      border-radius: 3px;
+      color: var(--muted);
+    }
+    .sheet-id .pill {
+      background: var(--accent-soft);
+      color: var(--accent);
+      border-radius: 100px;
+      padding: 2px 9px;
+      font-size: 9.5px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .sheet-actions {
+      display: flex; gap: 10px;
+      align-self: end;
+      padding-bottom: 6px;
+    }
+    .btn {
+      font-family: var(--font-mono);
+      font-size: 10.5px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      background: var(--surface);
+      border: 1px solid var(--border-strong);
+      border-radius: 3px;
+      padding: 6px 12px;
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .btn:hover {
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .sheet-frame {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      box-shadow:
+        0 1px 0 rgba(22,20,14,0.02),
+        0 10px 30px -16px rgba(22,20,14,0.12);
+      overflow: hidden;
+      position: relative;
+    }
+    .sheet-frame iframe {
+      display: block;
+      width: 100%;
+      border: 0;
+      background: var(--surface);
+    }
+
+    /* Fullscreen mode for a sheet section */
+    section.sheet.is-fullscreen {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      background: var(--bg);
+      padding: 16px;
+      margin: 0;
+      overflow: auto;
+      border-bottom: none;
+    }
+    section.sheet.is-fullscreen .sheet-frame iframe {
+      height: calc(100vh - 160px) !important;
+    }
+
+    @media (max-width: 900px) {
+      :root { --sidebar-w: 0px; }
+      aside.menu {
+        position: static;
+        width: 100%;
+        height: auto;
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+        padding: 20px 20px 16px;
+      }
+      .menu-list { display: flex; flex-wrap: wrap; gap: 4px; }
+      .menu-list a { padding: 6px 10px; }
+      .menu-list a.active::before { display: none; }
+      main { padding: 0 20px 60px; }
+      .sheet-head {
+        grid-template-columns: 60px 1fr;
+        gap: 14px;
+      }
+      .sheet-actions { grid-column: 1 / -1; align-self: start; padding: 0; }
+      .sheet-num { font-size: 44px; }
+    }
+  </style>
+</head>
+<body>
+
+  <aside class="menu" aria-label="Sheet navigation">
+    <div class="menu-brand">
+      <span class="menu-brand-dot"></span>
+      Reaktor / Analytics
+    </div>
+    <h1 class="menu-title">Operational <em>KPIs</em></h1>
+    <p class="menu-sub">Production app · iframe edition</p>
+
+    <div class="auth-card">
+      Sheets blank? Sign in first:
+      <a href="https://reaktor.eu.qlikcloud.com" target="_blank" rel="noopener">open Qlik Cloud ↗</a>
+      then reload this page.
+    </div>
+
+    <ul class="menu-list" id="menu-list"></ul>
+
+    <div class="menu-footer">
+      <div>App ID</div>
+      <div style="font-family:var(--font-mono);color:var(--muted);font-size:9.5px;letter-spacing:0;margin-bottom:14px;word-break:break-all">0f609325-88ab-4369-890f-e132107013a4</div>
+      <a href="https://reaktor.eu.qlikcloud.com/sense/app/0f609325-88ab-4369-890f-e132107013a4" target="_blank" rel="noopener">Open full app ↗</a>
+    </div>
+  </aside>
+
+  <main>
+    <header class="hero">
+      <div class="hero-meta">
+        <span><span class="dot">●</span> Live</span>
+        <span>Updated continuously</span>
+        <span>12 sheets</span>
+      </div>
+      <h1>Reaktor's operational <em>numbers</em>, on one page.</h1>
+      <p class="hero-lead">
+        Every sheet from the production <strong>Operational KPIs</strong> Qlik
+        app, in scroll order. Navigate with the menu on the left, or just keep
+        scrolling. Each sheet runs in its own embedded session — make
+        selections on one without affecting the others. The default view
+        excludes trainees, matching the app's standard bookmark.
+      </p>
+    </header>
+
+    <div id="sheets"></div>
+  </main>
+
+  <script>
+    const { CONFIG, SHEETS, GLOBAL_SELECTIONS } = window;
+
+    // Build a Single Integration API URL for one sheet.
+    // Format reference:
+    //   https://help.qlik.com/en-US/cloud-services/Subsystems/Hub/Content/Sense_Hub/Embed/embed-sheet-app.htm
+    //
+    //   /single/?appid=APP&sheet=SHEET&opt=ctxmenu,currsel&select=field,v1,v2
+    //
+    // Multiple selections in different fields → multiple &select= params.
+    // Multiple values in the SAME field → comma-separated after the field.
+    function buildSheetUrl(sheet) {
+      const parts = [];
+      parts.push("appid=" + encodeURIComponent(CONFIG.APP_ID));
+      parts.push("sheet=" + encodeURIComponent(sheet.id));
+      parts.push("opt="   + encodeURIComponent(sheet.opt || CONFIG.defaultOpt));
+
+      const selections = [
+        ...GLOBAL_SELECTIONS,
+        ...(sheet.selections || [])
+      ];
+      selections.forEach(sel => {
+        const field  = encodeURIComponent(sel.field);
+        const values = sel.values.map(encodeURIComponent).join(",");
+        parts.push("select=" + field + "," + values);
+      });
+
+      return "https://" + CONFIG.HOST + "/single/?" + parts.join("&");
+    }
+
+    // Render menu + sheet sections from the config array.
+    const sheetsRoot = document.getElementById("sheets");
+    const menuList   = document.getElementById("menu-list");
+
+    SHEETS.forEach((sheet, i) => {
+      const idx = String(i + 1).padStart(2, "0");
+      const anchor = "sheet-" + i;
+      const url = buildSheetUrl(sheet);
+      const height = sheet.height || "88vh";
+      const hasOwnSelections = Array.isArray(sheet.selections) && sheet.selections.length > 0;
+
+      // Menu entry
+      const li = document.createElement("li");
+      const a  = document.createElement("a");
+      a.href = "#" + anchor;
+      a.dataset.anchor = anchor;
+      a.innerHTML =
+        '<span class="num">' + idx + '</span>' +
+        '<span class="label">' + sheet.title + '</span>';
+      li.appendChild(a);
+      menuList.appendChild(li);
+
+      // Section
+      const sec = document.createElement("section");
+      sec.className = "sheet";
+      sec.id = anchor;
+
+      const head = document.createElement("div");
+      head.className = "sheet-head";
+      head.innerHTML =
+        '<div class="sheet-num">' + idx + '</div>' +
+        '<div class="sheet-title-block">' +
+          '<div class="sheet-id">' +
+            '<code>' + sheet.id + '</code>' +
+            (hasOwnSelections ? '<span class="pill">filtered</span>' : '') +
+          '</div>' +
+          '<h2>' + sheet.title + '</h2>' +
+          (sheet.subtitle ? '<p class="sheet-subtitle">' + sheet.subtitle + '</p>' : '') +
+        '</div>' +
+        '<div class="sheet-actions">' +
+          '<a class="btn" href="' + url + '" target="_blank" rel="noopener">Open ↗</a>' +
+          '<button class="btn" type="button" data-fullscreen="' + anchor + '">Fullscreen</button>' +
+        '</div>';
+      sec.appendChild(head);
+
+      const frame = document.createElement("div");
+      frame.className = "sheet-frame";
+      // loading="lazy" → off-screen iframes don't load until you scroll near them.
+      // This keeps the initial page snappy even with 12 sheets.
+      frame.innerHTML =
+        '<iframe src="' + url + '" ' +
+                'loading="lazy" ' +
+                'referrerpolicy="origin" ' +
+                'style="height:' + height + ';" ' +
+                'title="' + sheet.title + '" ' +
+                'allow="clipboard-read; clipboard-write"></iframe>';
+      sec.appendChild(frame);
+
+      sheetsRoot.appendChild(sec);
+    });
+
+    // Fullscreen toggle
+    document.addEventListener("click", (e) => {
+      const btn = e.target.closest("[data-fullscreen]");
+      if (!btn) return;
+      const sec = document.getElementById(btn.dataset.fullscreen);
+      if (!sec) return;
+      sec.classList.toggle("is-fullscreen");
+      btn.textContent = sec.classList.contains("is-fullscreen") ? "Exit" : "Fullscreen";
+    });
+
+    // Active-section highlight
+    const links = [...menuList.querySelectorAll("a")];
+    const linkByAnchor = Object.fromEntries(links.map(a => [a.dataset.anchor, a]));
+    const obs = new IntersectionObserver(
+      (entries) => {
+        entries.forEach(entry => {
+          const a = linkByAnchor[entry.target.id];
+          if (!a) return;
+          if (entry.isIntersecting) {
+            links.forEach(l => l.classList.remove("active"));
+            a.classList.add("active");
+          }
+        });
+      },
+      { rootMargin: "-30% 0px -60% 0px", threshold: 0 }
+    );
+    document.querySelectorAll("section.sheet").forEach(s => obs.observe(s));
+    if (links[0]) links[0].classList.add("active");
+  </script>
+
+</body>
+</html>
