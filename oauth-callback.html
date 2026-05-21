@@ -1,41 +1,33 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="utf-8" />
   <title>Signing you in…</title>
 
   <!--
     OAuth callback for the Operational KPIs dashboard.
 
-    Place this file at exactly the path you registered as
-    the Redirect URI for your Qlik OAuth2 SPA client. The
-    qlik-embed script auto-detects that this is the callback
-    page and finishes the token exchange, then closes the
-    window (if popup mode) or redirects back.
+    This is intentionally tiny. The only thing on this page is
+    Qlik's official OAuth callback handler script, which:
+      • parses the auth code from the URL,
+      • exchanges it for a token,
+      • stores it in the same storage as the parent page
+        (sessionStorage by default),
+      • closes / redirects back.
 
-    The data-* attributes MUST mirror those in the parent
-    dashboard file.
+    This handler is a minimal IIFE that does NOT use `eval`,
+    so it works under strict CSPs. Do not replace it with the
+    full `@qlik/embed-web-components` bundle.
+
+    The data-host MUST match the host in the main dashboard.
   -->
 
   <script
     crossorigin="anonymous"
     type="application/javascript"
     data-host="https://reaktor.eu.qlikcloud.com"
-    data-client-id="019e4af33a18c45debf76c1b45cb6f4f"
-    data-redirect-uri=""
-    data-access-token-storage="session"
-    data-auth-type="Oauth2"
-    src="https://cdn.jsdelivr.net/npm/@qlik/embed-web-components"
+    src="https://cdn.jsdelivr.net/npm/@qlik/api@2/oauth-callback.iife.js"
   ></script>
-
-  <script>
-    // Mirror the redirect URI logic from the main file so the
-    // values match regardless of where this is hosted.
-    document.currentScript.previousElementSibling.setAttribute(
-      "data-redirect-uri",
-      window.location.origin + window.location.pathname
-    );
-  </script>
 
   <style>
     body {
@@ -47,10 +39,7 @@
       place-items: center;
       min-height: 100vh;
     }
-    .box {
-      text-align: center;
-      padding: 32px 40px;
-    }
+    .box { text-align: center; padding: 32px 40px; }
     .dot {
       width: 8px; height: 8px;
       background: #D54B17;
