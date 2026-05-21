@@ -201,6 +201,66 @@
       mix-blend-mode: multiply;
     }
 
+    /* ─── Menu open/close buttons ─── */
+    /* Close button lives inside the menu, top-right corner. */
+    .menu-close {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      width: 30px;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 4px;
+      color: var(--muted-2);
+      cursor: pointer;
+      padding: 0;
+      transition: all 0.15s ease;
+    }
+    .menu-close:hover {
+      color: var(--accent);
+      border-color: var(--border-strong);
+      background: var(--surface-2);
+    }
+    .menu-close svg { width: 16px; height: 16px; display: block; }
+
+    /* Open button floats at top-left; hidden by default, shown when menu is closed. */
+    .menu-open {
+      position: fixed;
+      top: 16px;
+      left: 16px;
+      z-index: 200;
+      width: 36px;
+      height: 36px;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--muted);
+      cursor: pointer;
+      padding: 0;
+      box-shadow: 0 2px 8px rgba(22,20,14,0.06);
+      transition: all 0.15s ease;
+      animation: btnPop 0.22s cubic-bezier(.4,.0,.2,1);
+    }
+    .menu-open:hover {
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+    .menu-open svg { width: 18px; height: 18px; display: block; }
+    body.menu-hidden .menu-open { display: flex; }
+    /* Always hide the open button while fullscreen is active. */
+    body.fullscreen-active .menu-open { display: none; }
+    @keyframes btnPop {
+      from { opacity: 0; transform: translateX(-6px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+
     /* Sidebar */
     aside.menu {
       position: fixed;
@@ -214,6 +274,16 @@
       flex-direction: column;
       z-index: 10;
       overflow-y: auto;
+      transition: transform 0.28s cubic-bezier(.4,.0,.2,1);
+    }
+    /* Slide the menu off-screen when the user closes it OR when any sheet
+       is fullscreen. Sliding (rather than relying on z-index) sidesteps the
+       stacking-context trap where a fixed-position fullscreen section inside
+       <main> can't rise above a fixed sidebar in the global context. */
+    body.menu-hidden aside.menu,
+    body.fullscreen-active aside.menu {
+      transform: translateX(-100%);
+      pointer-events: none;
     }
     .menu-brand {
       display: flex; align-items: baseline; gap: 8px;
@@ -326,6 +396,11 @@
       padding: 0 var(--content-pad) 80px;
       position: relative;
       z-index: 2;
+      transition: margin-left 0.28s cubic-bezier(.4,.0,.2,1);
+    }
+    body.menu-hidden main,
+    body.fullscreen-active main {
+      margin-left: 0;
     }
 
     .hero {
@@ -395,7 +470,7 @@
       font-size: clamp(28px, 3.2vw, 40px);
       line-height: 1.05;
       letter-spacing: -0.015em;
-      margin: 14px 0 8px;
+      margin: 6px 0 8px;
       color: var(--ink);
     }
     .sheet-subtitle {
@@ -403,32 +478,6 @@
       font-size: 15px;
       max-width: 660px;
       margin: 0 0 10px;
-    }
-    .sheet-id {
-      font-family: var(--font-mono);
-      font-size: 10.5px;
-      letter-spacing: 0.05em;
-      color: var(--muted-2);
-      display: inline-flex;
-      gap: 8px;
-      align-items: center;
-      flex-wrap: wrap;
-    }
-    .sheet-id code {
-      background: var(--surface-2);
-      border: 1px solid var(--border);
-      padding: 2px 7px;
-      border-radius: 3px;
-      color: var(--muted);
-    }
-    .sheet-id .pill {
-      background: var(--accent-soft);
-      color: var(--accent);
-      border-radius: 100px;
-      padding: 2px 9px;
-      font-size: 9.5px;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
     }
 
     .sheet-actions {
@@ -472,19 +521,36 @@
       background: var(--surface);
     }
 
-    /* Fullscreen mode for a sheet section */
+    /* Fullscreen mode for a sheet section.
+       Flexbox lets the iframe take exactly the remaining vertical
+       space — no fragile calc() math, no inner scrollbar. The body
+       scroll lock prevents the page underneath from scrolling too,
+       so only the iframe's own scrolling (if any) remains. */
+    body.fullscreen-active {
+      overflow: hidden;
+    }
     section.sheet.is-fullscreen {
       position: fixed;
       inset: 0;
       z-index: 100;
       background: var(--bg);
-      padding: 16px;
+      padding: 16px 24px 20px;
       margin: 0;
-      overflow: auto;
+      overflow: hidden;
       border-bottom: none;
+      display: flex;
+      flex-direction: column;
+    }
+    section.sheet.is-fullscreen .sheet-head {
+      flex: 0 0 auto;
+      margin-bottom: 16px;
+    }
+    section.sheet.is-fullscreen .sheet-frame {
+      flex: 1 1 auto;
+      min-height: 0; /* allow the flex item to shrink past intrinsic size */
     }
     section.sheet.is-fullscreen .sheet-frame iframe {
-      height: calc(100vh - 160px) !important;
+      height: 100% !important;
     }
 
     @media (max-width: 900px) {
@@ -513,6 +579,13 @@
 <body>
 
   <aside class="menu" aria-label="Sheet navigation">
+    <button class="menu-close" id="menu-close" type="button" aria-label="Hide navigation menu" title="Hide menu">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <rect width="18" height="18" x="3" y="3" rx="2"/>
+        <path d="M9 3v18"/>
+        <path d="m16 15-3-3 3-3"/>
+      </svg>
+    </button>
     <div class="menu-brand">
       <span class="menu-brand-dot"></span>
       Reaktor / Analytics
@@ -534,6 +607,14 @@
       <a href="https://reaktor.eu.qlikcloud.com/sense/app/0f609325-88ab-4369-890f-e132107013a4" target="_blank" rel="noopener">Open full app ↗</a>
     </div>
   </aside>
+
+  <button class="menu-open" id="menu-open" type="button" aria-label="Show navigation menu" title="Show menu">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <rect width="18" height="18" x="3" y="3" rx="2"/>
+      <path d="M9 3v18"/>
+      <path d="m14 9 3 3-3 3"/>
+    </svg>
+  </button>
 
   <main>
     <header class="hero">
@@ -594,7 +675,6 @@
       const anchor = "sheet-" + i;
       const url = buildSheetUrl(sheet);
       const height = sheet.height || "88vh";
-      const hasOwnSelections = Array.isArray(sheet.selections) && sheet.selections.length > 0;
 
       // Menu entry
       const li = document.createElement("li");
@@ -617,10 +697,6 @@
       head.innerHTML =
         '<div class="sheet-num">' + idx + '</div>' +
         '<div class="sheet-title-block">' +
-          '<div class="sheet-id">' +
-            '<code>' + sheet.id + '</code>' +
-            (hasOwnSelections ? '<span class="pill">filtered</span>' : '') +
-          '</div>' +
           '<h2>' + sheet.title + '</h2>' +
           (sheet.subtitle ? '<p class="sheet-subtitle">' + sheet.subtitle + '</p>' : '') +
         '</div>' +
@@ -646,14 +722,28 @@
       sheetsRoot.appendChild(sec);
     });
 
-    // Fullscreen toggle
+    // Fullscreen toggle — also flips a body class so the menu slides away.
     document.addEventListener("click", (e) => {
       const btn = e.target.closest("[data-fullscreen]");
       if (!btn) return;
       const sec = document.getElementById(btn.dataset.fullscreen);
       if (!sec) return;
-      sec.classList.toggle("is-fullscreen");
-      btn.textContent = sec.classList.contains("is-fullscreen") ? "Exit" : "Fullscreen";
+      const becomingFs = !sec.classList.contains("is-fullscreen");
+      // Make sure no other section is left stuck in fullscreen.
+      document.querySelectorAll("section.sheet.is-fullscreen").forEach(s => {
+        if (s !== sec) s.classList.remove("is-fullscreen");
+      });
+      sec.classList.toggle("is-fullscreen", becomingFs);
+      btn.textContent = becomingFs ? "Exit" : "Fullscreen";
+      document.body.classList.toggle("fullscreen-active", becomingFs);
+    });
+
+    // Menu open/close.
+    document.getElementById("menu-close").addEventListener("click", () => {
+      document.body.classList.add("menu-hidden");
+    });
+    document.getElementById("menu-open").addEventListener("click", () => {
+      document.body.classList.remove("menu-hidden");
     });
 
     // Active-section highlight
