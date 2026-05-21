@@ -1,0 +1,829 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Operational KPIs — Dashboard</title>
+
+  <!--
+    ============================================================
+      REAKTOR OPERATIONAL KPIs — STANDALONE DASHBOARD
+    ============================================================
+
+      One-page vertical scroll of every sheet in the Qlik
+      "Operational KPIs" production app, with a persistent
+      left-side menu for quick navigation.
+
+      Built on Qlik's `qlik-embed` web components.
+      Docs:  https://qlik.dev/embed/qlik-embed/parameters/
+
+    -----------  HOW TO EDIT  -----------
+      1. Update OAUTH_CLIENT_ID below to the SPA client you
+         created in the Qlik tenant management console.
+         (https://reaktor.eu.qlikcloud.com/console/oauth-clients)
+      2. Save this file somewhere served via HTTPS (or
+         http://localhost for testing) and set REDIRECT_URI
+         to that URL.
+      3. To add / remove / re-order sheets, edit the SHEETS
+         array. Each entry is independent.
+      4. To set a default selection that affects ALL sheets,
+         edit GLOBAL_SELECTIONS.
+      5. To set selections for ONE sheet only, add a
+         `selections` array on that sheet entry. The page will
+         give that sheet its own isolated session.
+      6. To swap to the heavier "full Qlik experience" UI,
+         change `ui` on a sheet from "analytics/sheet" to
+         "classic/app". classic/app brings native chrome and
+         supports the `select:json` attribute directly.
+    ============================================================
+  -->
+
+  <!-- ─────────────  CONFIG  ───────────── -->
+  <script>
+    // Qlik tenant — Reaktor production
+    window.QLIK_CONFIG = {
+      HOST:           "reaktor.eu.qlikcloud.com",
+      OAUTH_CLIENT_ID: "PASTE-YOUR-OAUTH-SPA-CLIENT-ID-HERE",
+      REDIRECT_URI:    window.location.origin + window.location.pathname.replace(/[^/]*$/, "") + "oauth-callback.html",
+      APP_ID:         "0f609325-88ab-4369-890f-e132107013a4", // Operational KPIs (production)
+      THEME:          "horizon"  // try: horizon, breeze, sand, card, classic
+    };
+
+    // Selections that apply across every shared-session sheet on load.
+    // Reaktor's default view excludes trainees, matching the app's default bookmark.
+    window.GLOBAL_SELECTIONS = [
+      { field: "Regular/Trainee", values: ["Regular"] }
+    ];
+
+    // Each entry becomes one section on the page.
+    // Required: id, title.
+    // Optional:
+    //   subtitle    — short caption shown under the title
+    //   height      — CSS height of the embed area (default 88vh)
+    //   ui          — "analytics/sheet" (default, lightweight) or "classic/app" (full chrome)
+    //   selections  — array of {field, values} to apply ONLY to this sheet
+    //                 (presence auto-isolates this sheet in its own session)
+    window.SHEETS = [
+      {
+        id: "DcaqT",
+        title: "Headcount & Capacity",
+        subtitle: "FTEs, joiners, leavers, churn",
+      },
+      {
+        id: "GYVgkP",
+        title: "Billable Work",
+        subtitle: "Billable hours by unit, client, internal vs subcontractor",
+      },
+      {
+        id: "b36c53ec-2a2a-48d2-9f3a-a648f5eac6ea",
+        title: "Work Entries Details",
+        subtitle: "Hours by entry type, project code, hour class",
+      },
+      {
+        id: "2a497d7c-bc6f-4c84-a200-59ef74d3de09",
+        title: "Assignments",
+        subtitle: "Current allocations, time-to-first-assignment",
+      },
+      {
+        id: "b169dfd1-b98b-41b6-bfd5-e2f62eeb8582",
+        title: "Pool",
+        subtitle: "Free capacity, daily trends, longest in pool",
+      },
+      {
+        id: "82876d70-12a2-4676-83cb-dfc02bea3ab8",
+        title: "Billing Ratio & Chargeability",
+        subtitle: "Headline ratios, rolling-12 averages",
+      },
+      {
+        id: "FdJmPM",
+        title: "CaC-% by Employee",
+        subtitle: "Per-person chargeability breakdowns",
+      },
+      {
+        id: "upStAc",
+        title: "CaC-% by Hour Class",
+        subtitle: "Non-billable hours grouped by hour code class",
+      },
+      {
+        id: "e4e2d52e-1f80-4bfc-9b65-e8e9ea3ff0ad",
+        title: "Billing Ratio by Employee",
+        subtitle: "Per-person billing ratio and hour breakdowns",
+      },
+      {
+        id: "28ecf415-a7f4-4a24-ac3b-a8cc1364b724",
+        title: "Sick Leaves",
+        subtitle: "Sick days/hours, trends, per-country",
+      },
+      {
+        id: "b27ad7f5-0089-4cd1-ab91-996eb1658160",
+        title: "Flextime",
+        subtitle: "Overtime balances, monthly changes, by unit",
+      },
+      {
+        id: "7990bbf5-5e2b-4666-a380-ca9d1a2f83de",
+        title: "Avg Price & Profitability",
+        subtitle: "Hourly prices, sales margin, subcontracting",
+      }
+    ];
+
+    /*  EXAMPLES of sheet-specific selections — uncomment / adapt:
+
+        // Pool page that always opens filtered to Finland:
+        {
+          id: "b169dfd1-b98b-41b6-bfd5-e2f62eeb8582",
+          title: "Pool — Finland",
+          subtitle: "Free capacity in Finland",
+          selections: [{ field: "Country", values: ["Finland"] }]
+        }
+
+        // Sick leaves page focused on the Aero business unit:
+        {
+          id: "28ecf415-a7f4-4a24-ac3b-a8cc1364b724",
+          title: "Sick Leaves — Aero",
+          selections: [{ field: "Home Unit", values: ["Aero"] }]
+        }
+    */
+  </script>
+
+  <!-- ─────────────  qlik-embed runtime  ─────────────
+       The data-* attributes on this script tag configure
+       OAuth2 SPA authentication for every <qlik-embed> on the
+       page. No further auth setup is needed in JS. -->
+  <script
+    crossorigin="anonymous"
+    type="application/javascript"
+    data-host="https://reaktor.eu.qlikcloud.com"
+    data-client-id=""  id="qlik-embed-script"
+    data-redirect-uri=""
+    data-access-token-storage="session"
+    data-auth-type="Oauth2"
+    src="https://cdn.jsdelivr.net/npm/@qlik/embed-web-components"
+  ></script>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300..900&family=Geist:wght@300..700&family=Geist+Mono:wght@400..600&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg:          #F7F4EE;
+      --surface:     #FFFFFF;
+      --surface-2:   #FBF8F2;
+      --ink:         #16140E;
+      --ink-soft:    #2C281E;
+      --muted:       #6B6358;
+      --muted-2:     #948B7E;
+      --border:      #E5DFD3;
+      --border-strong:#C9C0B0;
+      --accent:      #D54B17;
+      --accent-soft: #F2E2D6;
+
+      --sidebar-w:   300px;
+      --content-pad: clamp(24px, 4vw, 56px);
+
+      --font-display: "Fraunces", ui-serif, Georgia, serif;
+      --font-body:    "Geist", ui-sans-serif, system-ui, sans-serif;
+      --font-mono:    "Geist Mono", ui-monospace, monospace;
+    }
+
+    *,*::before,*::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: var(--font-body);
+      font-size: 15px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+
+    /* ─── Subtle grain texture, very low opacity ─── */
+    body::before {
+      content: "";
+      position: fixed; inset: 0;
+      pointer-events: none;
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.04 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+      opacity: 0.6;
+      z-index: 1;
+      mix-blend-mode: multiply;
+    }
+
+    /* ─── Sidebar (persistent menu) ─── */
+    aside.menu {
+      position: fixed;
+      top: 0; left: 0;
+      width: var(--sidebar-w);
+      height: 100vh;
+      padding: 32px 24px 24px 28px;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      z-index: 10;
+      overflow-y: auto;
+    }
+    .menu-brand {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+    .menu-brand-dot {
+      width: 6px; height: 6px;
+      background: var(--accent);
+      border-radius: 50%;
+      display: inline-block;
+      transform: translateY(-1px);
+    }
+    .menu-title {
+      font-family: var(--font-display);
+      font-weight: 400;
+      font-size: 28px;
+      letter-spacing: -0.01em;
+      line-height: 1.05;
+      margin: 0 0 8px 0;
+      color: var(--ink);
+    }
+    .menu-title em {
+      font-style: italic;
+      font-weight: 300;
+      color: var(--accent);
+    }
+    .menu-sub {
+      font-size: 12.5px;
+      color: var(--muted);
+      margin-bottom: 28px;
+    }
+
+    .menu-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--font-mono);
+      font-size: 10.5px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      padding: 8px 0;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 18px;
+    }
+    .menu-status-dot {
+      width: 7px; height: 7px;
+      background: var(--muted-2);
+      border-radius: 50%;
+      animation: pulse 2s ease-in-out infinite;
+    }
+    .menu-status-dot.ok    { background: #62A57A; }
+    .menu-status-dot.error { background: var(--accent); animation: none; }
+    @keyframes pulse {
+      0%,100% { opacity: 0.4; }
+      50%     { opacity: 1; }
+    }
+
+    .menu-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .menu-list li { margin: 0; }
+    .menu-list a {
+      display: grid;
+      grid-template-columns: 22px 1fr;
+      align-items: baseline;
+      gap: 10px;
+      padding: 9px 10px 9px 6px;
+      text-decoration: none;
+      color: var(--ink-soft);
+      border-radius: 4px;
+      transition: background 0.15s ease, color 0.15s ease;
+      position: relative;
+    }
+    .menu-list a:hover {
+      background: var(--surface-2);
+      color: var(--ink);
+    }
+    .menu-list a .num {
+      font-family: var(--font-mono);
+      font-size: 10.5px;
+      color: var(--muted-2);
+      letter-spacing: 0.05em;
+    }
+    .menu-list a .label {
+      font-size: 13.5px;
+      line-height: 1.3;
+    }
+    .menu-list a.active {
+      background: var(--surface-2);
+      color: var(--ink);
+    }
+    .menu-list a.active::before {
+      content: "";
+      position: absolute;
+      left: -28px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 3px; height: 22px;
+      background: var(--accent);
+      border-radius: 2px;
+    }
+    .menu-list a.active .num { color: var(--accent); }
+
+    .menu-footer {
+      margin-top: auto;
+      padding-top: 24px;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      color: var(--muted-2);
+      text-transform: uppercase;
+      line-height: 1.6;
+    }
+    .menu-footer a {
+      color: var(--muted);
+      text-decoration: none;
+      border-bottom: 1px dotted var(--border-strong);
+    }
+    .menu-footer a:hover { color: var(--accent); }
+
+    /* ─── Main content ─── */
+    main {
+      margin-left: var(--sidebar-w);
+      padding: 0 var(--content-pad) 80px;
+      position: relative;
+      z-index: 2;
+    }
+
+    /* Sticky bar — selections + global meta */
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      background: rgba(247,244,238,0.92);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 0;
+      margin: 0 calc(-1 * var(--content-pad)) 0;
+      padding-left: var(--content-pad);
+      padding-right: var(--content-pad);
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    .topbar-label {
+      font-family: var(--font-mono);
+      font-size: 10.5px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .topbar qlik-embed {
+      flex: 1 1 auto;
+      min-height: 32px;
+    }
+
+    /* Page hero */
+    .hero {
+      padding: 64px 0 48px;
+      border-bottom: 1px solid var(--border);
+    }
+    .hero-meta {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 18px;
+      display: flex;
+      gap: 18px;
+      flex-wrap: wrap;
+    }
+    .hero-meta span { display: inline-flex; gap: 6px; align-items: center; }
+    .hero-meta .dot { color: var(--accent); }
+    .hero h1 {
+      font-family: var(--font-display);
+      font-weight: 300;
+      font-size: clamp(40px, 5.5vw, 72px);
+      line-height: 1;
+      letter-spacing: -0.025em;
+      margin: 0 0 18px 0;
+      color: var(--ink);
+    }
+    .hero h1 em {
+      font-style: italic;
+      font-weight: 300;
+      color: var(--accent);
+    }
+    .hero-lead {
+      max-width: 640px;
+      font-size: 16.5px;
+      line-height: 1.55;
+      color: var(--ink-soft);
+    }
+
+    /* Sheet section */
+    section.sheet {
+      padding: 56px 0 56px;
+      border-bottom: 1px solid var(--border);
+      scroll-margin-top: 70px;
+    }
+    section.sheet:last-of-type { border-bottom: none; }
+
+    .sheet-head {
+      display: grid;
+      grid-template-columns: 90px 1fr;
+      gap: 24px;
+      align-items: start;
+      margin-bottom: 28px;
+    }
+    .sheet-num {
+      font-family: var(--font-display);
+      font-weight: 300;
+      font-size: 64px;
+      line-height: 1;
+      color: var(--accent);
+      letter-spacing: -0.03em;
+      font-feature-settings: "tnum" 1;
+    }
+    .sheet-title-block h2 {
+      font-family: var(--font-display);
+      font-weight: 400;
+      font-size: clamp(28px, 3.2vw, 40px);
+      line-height: 1.05;
+      letter-spacing: -0.015em;
+      margin: 14px 0 8px;
+      color: var(--ink);
+    }
+    .sheet-subtitle {
+      color: var(--muted);
+      font-size: 15px;
+      max-width: 660px;
+      margin: 0 0 10px;
+    }
+    .sheet-id {
+      font-family: var(--font-mono);
+      font-size: 10.5px;
+      letter-spacing: 0.05em;
+      color: var(--muted-2);
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .sheet-id code {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      padding: 2px 7px;
+      border-radius: 3px;
+      color: var(--muted);
+    }
+    .sheet-id .pill {
+      background: var(--accent-soft);
+      color: var(--accent);
+      border-radius: 100px;
+      padding: 2px 9px;
+      font-size: 9.5px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    /* The actual Qlik embed container */
+    .sheet-embed {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 12px;
+      box-shadow:
+        0 1px 0 rgba(22,20,14,0.02),
+        0 10px 30px -16px rgba(22,20,14,0.12);
+      min-height: 88vh;
+      position: relative;
+    }
+    .sheet-embed qlik-embed {
+      display: block;
+      width: 100%;
+      height: 100%;
+      min-height: calc(88vh - 24px);
+    }
+
+    /* Error/warning panel for unconfigured state */
+    .config-warning {
+      margin: 32px 0;
+      padding: 20px 24px;
+      background: var(--accent-soft);
+      border: 1px solid var(--accent);
+      border-left-width: 4px;
+      border-radius: 4px;
+      color: var(--ink-soft);
+      font-size: 14px;
+      line-height: 1.55;
+    }
+    .config-warning b { color: var(--accent); }
+    .config-warning code {
+      font-family: var(--font-mono);
+      background: rgba(255,255,255,0.6);
+      padding: 1px 6px;
+      border-radius: 3px;
+      font-size: 13px;
+    }
+
+    /* Responsive — collapse sidebar to a top bar on narrow screens */
+    @media (max-width: 900px) {
+      :root { --sidebar-w: 0px; }
+      aside.menu {
+        position: static;
+        width: 100%;
+        height: auto;
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+        padding: 20px 20px 16px;
+      }
+      .menu-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+      }
+      .menu-list a { padding: 6px 10px; }
+      .menu-list a.active::before { display: none; }
+      main { padding: 0 20px 60px; }
+      .sheet-head { grid-template-columns: 60px 1fr; gap: 14px; }
+      .sheet-num { font-size: 44px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ─────  PERSISTENT MENU  ───── -->
+  <aside class="menu" aria-label="Sheet navigation">
+    <div class="menu-brand">
+      <span class="menu-brand-dot"></span>
+      Reaktor / Analytics
+    </div>
+    <h1 class="menu-title">Operational <em>KPIs</em></h1>
+    <p class="menu-sub">Production app · vertical scroll dashboard</p>
+
+    <div class="menu-status" id="menu-status">
+      <span class="menu-status-dot" id="menu-status-dot"></span>
+      <span id="menu-status-text">Connecting…</span>
+    </div>
+
+    <ul class="menu-list" id="menu-list"></ul>
+
+    <div class="menu-footer">
+      <div>App ID</div>
+      <div style="font-family:var(--font-mono);color:var(--muted);font-size:9.5px;letter-spacing:0;margin-bottom:14px;word-break:break-all">0f609325-88ab-4369-890f-e132107013a4</div>
+      <a id="open-in-qlik" href="https://reaktor.eu.qlikcloud.com/sense/app/0f609325-88ab-4369-890f-e132107013a4" target="_blank" rel="noopener">Open in Qlik ↗</a>
+    </div>
+  </aside>
+
+  <!-- ─────  MAIN  ───── -->
+  <main>
+
+    <!-- Sticky top bar: shared selections (only visible when at least one sheet is in shared mode) -->
+    <div class="topbar" id="topbar" style="display:none">
+      <span class="topbar-label">Filters</span>
+      <qlik-embed id="global-selections" ui="analytics/selections"></qlik-embed>
+    </div>
+
+    <!-- Hero -->
+    <header class="hero">
+      <div class="hero-meta">
+        <span><span class="dot">●</span> Live</span>
+        <span id="hero-updated">Updated continuously</span>
+        <span>12 sheets</span>
+      </div>
+      <h1>Reaktor's operational <em>numbers</em>, on one page.</h1>
+      <p class="hero-lead">
+        Every sheet from the production <strong>Operational KPIs</strong> Qlik
+        app, in scroll order. Navigate with the menu on the left, or just keep
+        scrolling. Filters in the top bar apply to every sheet that shares the
+        global session; sheets with their own pre-configured selections are
+        isolated.
+      </p>
+    </header>
+
+    <!-- Config warning (only shown if OAuth not configured) -->
+    <div class="config-warning" id="config-warning" style="display:none">
+      <b>One-time setup needed.</b><br>
+      Open this file and replace <code>PASTE-YOUR-OAUTH-SPA-CLIENT-ID-HERE</code> in
+      <code>window.QLIK_CONFIG.OAUTH_CLIENT_ID</code> with the client ID of an OAuth2 SPA
+      client created in the Qlik tenant. The redirect URI registered on that
+      client must match <code id="cw-redirect"></code>. You also need an
+      <code>oauth-callback.html</code> file next to this one — see the comment block
+      at the top of this file.
+    </div>
+
+    <!-- Sheets are injected here -->
+    <div id="sheets"></div>
+
+  </main>
+
+  <!-- ─────  qlik-initial-selections (global)  ───── -->
+  <!-- The qlik-embed framework reads this BEFORE any embeds
+       initialize, applying these as default filters to the
+       shared session. Per-sheet selections (in JS config) are
+       handled separately by giving those sheets a unique
+       `identity` and applying selections via qlik-api. -->
+  <qlik-initial-selections app-id="0f609325-88ab-4369-890f-e132107013a4" id="global-initial-selections"></qlik-initial-selections>
+
+  <!-- ─────  PAGE LOGIC  ───── -->
+  <script type="module">
+    const { QLIK_CONFIG, SHEETS, GLOBAL_SELECTIONS } = window;
+
+    // ── 1. Wire up auth on the qlik-embed script tag ──
+    // We set data-* attributes dynamically so that the config
+    // lives in one place at the top of the file.
+    const qlikScript = document.getElementById("qlik-embed-script");
+    qlikScript.setAttribute("data-client-id", QLIK_CONFIG.OAUTH_CLIENT_ID);
+    qlikScript.setAttribute("data-redirect-uri", QLIK_CONFIG.REDIRECT_URI);
+
+    document.getElementById("cw-redirect").textContent = QLIK_CONFIG.REDIRECT_URI;
+    if (!QLIK_CONFIG.OAUTH_CLIENT_ID || QLIK_CONFIG.OAUTH_CLIENT_ID.startsWith("PASTE")) {
+      document.getElementById("config-warning").style.display = "block";
+      document.getElementById("menu-status-text").textContent = "Not configured";
+      document.getElementById("menu-status-dot").classList.add("error");
+    }
+
+    // ── 2. Build the sheet sections from SHEETS array ──
+    const sheetsRoot = document.getElementById("sheets");
+    const menuList   = document.getElementById("menu-list");
+    let anySharedSheets = false;
+
+    SHEETS.forEach((sheet, i) => {
+      const idx = String(i + 1).padStart(2, "0");
+      const anchor = `sheet-${i}`;
+      const hasOwnSelections = Array.isArray(sheet.selections) && sheet.selections.length > 0;
+      if (!hasOwnSelections) anySharedSheets = true;
+
+      // Menu item
+      const li = document.createElement("li");
+      li.innerHTML = `
+        <a href="#${anchor}" data-anchor="${anchor}">
+          <span class="num">${idx}</span>
+          <span class="label">${sheet.title}</span>
+        </a>`;
+      menuList.appendChild(li);
+
+      // Section
+      const ui     = sheet.ui     || "analytics/sheet";
+      const height = sheet.height || "88vh";
+      const identity = hasOwnSelections ? `iso-${i}-${sheet.id}` : "";
+
+      const sec = document.createElement("section");
+      sec.className = "sheet";
+      sec.id = anchor;
+      sec.dataset.identity = identity;
+      sec.innerHTML = `
+        <div class="sheet-head">
+          <div class="sheet-num">${idx}</div>
+          <div class="sheet-title-block">
+            <div class="sheet-id">
+              <code>${sheet.id}</code>
+              <span>·</span>
+              <span>${ui}</span>
+              ${hasOwnSelections ? '<span class="pill">isolated</span>' : ''}
+            </div>
+            <h2>${sheet.title}</h2>
+            ${sheet.subtitle ? `<p class="sheet-subtitle">${sheet.subtitle}</p>` : ""}
+          </div>
+        </div>
+        <div class="sheet-embed" style="min-height:${height}">
+          <qlik-embed
+            ui="${ui}"
+            app-id="${QLIK_CONFIG.APP_ID}"
+            ${ui === "classic/app" ? "sheet-id" : "object-id"}="${sheet.id}"
+            ${identity ? `identity="${identity}"` : ""}
+            ${QLIK_CONFIG.THEME ? `theme="${QLIK_CONFIG.THEME}"` : ""}
+          ></qlik-embed>
+        </div>`;
+      sheetsRoot.appendChild(sec);
+    });
+
+    // Show the topbar only if any sheet uses the shared session
+    if (anySharedSheets) document.getElementById("topbar").style.display = "flex";
+
+    // ── 3. Install global initial selections ──
+    // We inject <field> children into the <qlik-initial-selections> tag.
+    const gis = document.getElementById("global-initial-selections");
+    GLOBAL_SELECTIONS.forEach(({ field, values }) => {
+      const f = document.createElement("field");
+      f.setAttribute("name", field);
+      f.setAttribute("values", values.join(";"));
+      gis.appendChild(f);
+    });
+
+    // ── 4. Wait for qlik-embed to be ready, then apply per-sheet selections ──
+    // Each isolated sheet gets its own app session via qix.openAppSession(appId, { identity }).
+    // We open the session and apply the selections.
+    async function applyIsolatedSelections() {
+      const sheetsWithSelections = SHEETS
+        .map((s, i) => ({ ...s, _idx: i, _identity: `iso-${i}-${s.id}` }))
+        .filter(s => Array.isArray(s.selections) && s.selections.length > 0);
+
+      if (sheetsWithSelections.length === 0) return;
+
+      try {
+        const { qix } = await import("https://cdn.jsdelivr.net/npm/@qlik/api/index.js");
+        for (const s of sheetsWithSelections) {
+          try {
+            const session = await qix.openAppSession({
+              appId: QLIK_CONFIG.APP_ID,
+              identity: s._identity
+            });
+            const app = await session.getDoc();
+
+            // Isolated sessions don't auto-inherit <qlik-initial-selections>,
+            // so we re-apply the global defaults first, then the sheet's
+            // own selections.
+            const allSelections = [...GLOBAL_SELECTIONS, ...s.selections];
+            for (const sel of allSelections) {
+              const field = await app.getField(sel.field);
+              await field.clear();
+              await field.selectValues(
+                sel.values.map(v => ({ qText: String(v) })),
+                false, // toggle
+                true   // softLock
+              );
+            }
+            console.log(`✓ Applied selections to ${s.title}`, allSelections);
+          } catch (err) {
+            console.warn(`Failed to apply selections to ${s.title}:`, err);
+          }
+        }
+      } catch (err) {
+        console.warn("Could not load @qlik/api for per-sheet selections:", err);
+      }
+    }
+
+    // ── 5. Connection status indicator ──
+    function setStatus(ok, text) {
+      document.getElementById("menu-status-text").textContent = text;
+      const dot = document.getElementById("menu-status-dot");
+      dot.classList.remove("ok", "error");
+      if (ok) dot.classList.add("ok");
+      if (ok === false) dot.classList.add("error");
+    }
+
+    // Watch the first qlik-embed for ready/error
+    function watchConnection() {
+      const firstEmbed = document.querySelector("qlik-embed");
+      if (!firstEmbed) return;
+      firstEmbed.addEventListener("ready", () => setStatus(true, "Connected"));
+      firstEmbed.addEventListener("error", (e) => {
+        setStatus(false, "Connection error");
+        console.error("qlik-embed error", e);
+      });
+      // Fallback: if nothing fires within 8s, assume connected if we can find a rendered child
+      setTimeout(() => {
+        if (firstEmbed.shadowRoot && firstEmbed.shadowRoot.childElementCount > 0) {
+          setStatus(true, "Connected");
+        }
+      }, 8000);
+    }
+
+    // Start it once the embed runtime has loaded
+    if (QLIK_CONFIG.OAUTH_CLIENT_ID && !QLIK_CONFIG.OAUTH_CLIENT_ID.startsWith("PASTE")) {
+      watchConnection();
+      // Apply per-sheet selections shortly after the page mounts.
+      // Embeds will pick up the session selections as they render.
+      setTimeout(applyIsolatedSelections, 1500);
+    }
+
+    // ── 6. Active-section highlight using IntersectionObserver ──
+    const links = [...menuList.querySelectorAll("a")];
+    const linkByAnchor = Object.fromEntries(links.map(a => [a.dataset.anchor, a]));
+    const obs = new IntersectionObserver(
+      (entries) => {
+        entries.forEach(entry => {
+          const a = linkByAnchor[entry.target.id];
+          if (!a) return;
+          if (entry.isIntersecting) {
+            links.forEach(l => l.classList.remove("active"));
+            a.classList.add("active");
+          }
+        });
+      },
+      {
+        // Trigger when section's top crosses ~30% from the viewport top
+        rootMargin: "-30% 0px -60% 0px",
+        threshold: 0
+      }
+    );
+    document.querySelectorAll("section.sheet").forEach(s => obs.observe(s));
+
+    // Default first item active on load
+    if (links[0]) links[0].classList.add("active");
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Signing you in…</title>
+
+  <!--
+    OAuth callback for the Operational KPIs dashboard.
+
+    Place this file at exactly the path you registered as
+    the Redirect URI for your Qlik OAuth2 SPA client. The
+    qlik-embed script auto-detects that this is the callback
+    page and finishes the token exchange, then closes the
+    window (if popup mode) or redirects back.
+
+    The data-* attributes MUST mirror those in the parent
+    dashboard file.
+  -->
+
+  <script
+    crossorigin="anonymous"
+    type="application/javascript"
+    data-host="https://reaktor.eu.qlikcloud.com"
+    data-client-id="PASTE-YOUR-OAUTH-SPA-CLIENT-ID-HERE"
+    data-redirect-uri=""
+    data-access-token-storage="session"
+    data-auth-type="Oauth2"
+    src="https://cdn.jsdelivr.net/npm/@qlik/embed-web-components"
+  ></script>
+
+  <script>
+    // Mirror the redirect URI logic from the main file so the
+    // values match regardless of where this is hosted.
+    document.currentScript.previousElementSibling.setAttribute(
+      "data-redirect-uri",
+      window.location.origin + window.location.pathname
+    );
+  </script>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      background: #F7F4EE;
+      color: #16140E;
+      display: grid;
+      place-items: center;
+      min-height: 100vh;
+    }
+    .box {
+      text-align: center;
+      padding: 32px 40px;
+    }
+    .dot {
+      width: 8px; height: 8px;
+      background: #D54B17;
+      border-radius: 50%;
+      display: inline-block;
+      animation: pulse 1.2s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 0.3; transform: scale(0.9); }
+      50%      { opacity: 1;   transform: scale(1.1); }
+    }
+    p { font-size: 14px; color: #6B6358; margin-top: 16px; }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <span class="dot"></span>
+    <p>Completing Qlik sign-in…</p>
+  </div>
+</body>
+</html>
