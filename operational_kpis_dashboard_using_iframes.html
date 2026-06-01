@@ -708,6 +708,7 @@
       const parts = [];
       parts.push("appid=" + encodeURIComponent(CONFIG.APP_ID));
       parts.push("sheet=" + encodeURIComponent(sheet.id));
+      parts.push("identity=" + encodeURIComponent(sheet.id));
       parts.push("opt="   + encodeURIComponent(sheet.opt || CONFIG.defaultOpt));
 
       const selections = [
