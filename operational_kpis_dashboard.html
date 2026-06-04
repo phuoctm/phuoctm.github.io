@@ -39,7 +39,16 @@
   -->
 
   <!-- ─────────────  CONFIG  ───────────── -->
-  <script>
+    <script
+        crossorigin="anonymous"
+        type="application/javascript"
+        src="https://cdn.jsdelivr.net/npm/@qlik/embed-web-components@1/dist/index.min.js"
+        data-host="https://reaktor.eu.qlikcloud.com"
+        data-client-id="019e4af33a18c45debf76c1b45cb6f4f"
+        data-redirect-uri="https://phuoctm.github.io/oauth-callback.html"
+        data-auto-redirect="false"
+        data-access-token-storage="session"
+      
     // Qlik tenant — Reaktor production
     window.QLIK_CONFIG = {
       HOST:           "reaktor.eu.qlikcloud.com",
@@ -148,7 +157,7 @@
   <!-- ─────────────  qlik-embed runtime  ─────────────
        The data-* attributes on this script tag configure
        OAuth2 SPA authentication for every <qlik-embed> on the
-       page. No further auth setup is needed in JS. -->
+       page. No further auth setup is needed in JS. 
   <script
     crossorigin="anonymous"
     type="application/javascript"
@@ -159,7 +168,7 @@
     data-auth-type="Oauth2"
     src="https://cdn.jsdelivr.net/npm/@qlik/embed-web-components"
   ></script>
-
+  -->
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
