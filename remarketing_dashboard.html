@@ -59,6 +59,7 @@
     window.CONFIG = {
       HOST:   "3stepit.de.qlikcloud.com",
       APP_ID: "cf8d9823-a353-46f5-9bc5-92a64ff3082c", // Production (production-version)
+      THEME: "3steIT-theme",
 
       // Default options on every iframe URL. See:
       // https://help.qlik.com/en-US/cloud-services/Subsystems/Hub/Content/Sense_Hub/Embed/embed-sheet-app.htm
@@ -663,6 +664,7 @@
   </main>
 
   <script>
+    const simpleHash = data => JSON.stringify(data).split('').reduce((h, c) => ((h << 5) - h) + c.charCodeAt(0) | 0, 0);
     const { CONFIG, SHEETS, GLOBAL_SELECTIONS } = window;
 
     // Build a Single Integration API URL for one sheet.
@@ -675,15 +677,16 @@
     // Multiple values in the SAME field → comma-separated after the field.
     function buildSheetUrl(sheet) {
       const parts = [];
+      parts.push("theme=" + encodeURIComponent(CONFIG.THEME));
       parts.push("appid=" + encodeURIComponent(CONFIG.APP_ID));
       parts.push("sheet=" + encodeURIComponent(sheet.id));
-      parts.push("identity=" + encodeURIComponent(sheet.id));
       parts.push("opt="   + encodeURIComponent(sheet.opt || CONFIG.defaultOpt));
 
       const selections = [
         ...GLOBAL_SELECTIONS,
         ...(sheet.selections || [])
       ];
+      parts.push("identity=" + simplehash(selections));
       selections.forEach(sel => {
         const field  = encodeURIComponent(sel.field);
         const values = sel.values.map(encodeURIComponent).join(",");
