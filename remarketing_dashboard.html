@@ -664,7 +664,7 @@
   </main>
 
   <script>
-    //const simpleHash = data => JSON.stringify(data).split('').reduce((h, c) => ((h << 5) - h) + c.charCodeAt(0) | 0, 0);
+    
     const { CONFIG, SHEETS, GLOBAL_SELECTIONS } = window;
 
     // Build a Single Integration API URL for one sheet.
@@ -676,19 +676,20 @@
     // Multiple selections in different fields → multiple &select= params.
     // Multiple values in the SAME field → comma-separated after the field.
     function buildSheetUrl(sheet) {
+      const simpleHash = data => JSON.stringify(data).split('').reduce((h, c) => ((h << 5) - h) + c.charCodeAt(0) | 0, 0);
       const parts = [];
       parts.push("theme=" + encodeURIComponent(CONFIG.THEME));
       parts.push("appid=" + encodeURIComponent(CONFIG.APP_ID));
       parts.push("sheet=" + encodeURIComponent(sheet.id));
-      parts.push("identity=" + encodeURIComponent(sheet.id));
-//      parts.push("identity=" + 'RM' + encodeURIComponent(sheet.selections));
       parts.push("opt="   + encodeURIComponent(sheet.opt || CONFIG.defaultOpt));
 
       const selections = [
         ...GLOBAL_SELECTIONS,
         ...(sheet.selections || [])
       ];
-      //parts.push("identity=" + simplehash(selections));
+//      parts.push("identity=" + encodeURIComponent(sheet.id));
+//      parts.push("identity=" + 'RM' + encodeURIComponent(sheet.selections));
+      parts.push("identity=" + simplehash(selections));
       selections.forEach(sel => {
         const field  = encodeURIComponent(sel.field);
         const values = sel.values.map(encodeURIComponent).join(",");
