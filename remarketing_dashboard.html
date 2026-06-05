@@ -75,7 +75,8 @@
     // Concatenated with each sheet's own `selections` before
     // building the URL. Reaktor's default view excludes trainees.
     window.GLOBAL_SELECTIONS = [
-      { field: "Quarter Year", values: ["2026-Q1", "2026-Q2"] }
+      { field: "Year", values: 2026 },
+      { field: "Quarter", values: [1, 2] }
     ];
 
     // Each entry becomes one section.
@@ -696,6 +697,7 @@
         parts.push("select=" + field + "," + values);
       });
 
+      console.log("https://" + CONFIG.HOST + "/single/?" + parts.join("&"));
       return "https://" + CONFIG.HOST + "/single/?" + parts.join("&");
     }
 
