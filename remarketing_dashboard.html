@@ -689,7 +689,7 @@
       ];
 //      parts.push("identity=" + encodeURIComponent(sheet.id));
 //      parts.push("identity=" + 'RM' + encodeURIComponent(sheet.selections));
-      parts.push("identity=" + simplehash(selections));
+      parts.push("identity=" + simpleHash(selections));
       selections.forEach(sel => {
         const field  = encodeURIComponent(sel.field);
         const values = sel.values.map(encodeURIComponent).join(",");
