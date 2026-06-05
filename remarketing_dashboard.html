@@ -664,7 +664,7 @@
   </main>
 
   <script>
-    const simpleHash = data => JSON.stringify(data).split('').reduce((h, c) => ((h << 5) - h) + c.charCodeAt(0) | 0, 0);
+    //const simpleHash = data => JSON.stringify(data).split('').reduce((h, c) => ((h << 5) - h) + c.charCodeAt(0) | 0, 0);
     const { CONFIG, SHEETS, GLOBAL_SELECTIONS } = window;
 
     // Build a Single Integration API URL for one sheet.
@@ -686,7 +686,7 @@
         ...GLOBAL_SELECTIONS,
         ...(sheet.selections || [])
       ];
-      parts.push("identity=" + simplehash(selections));
+      //parts.push("identity=" + simplehash(selections));
       selections.forEach(sel => {
         const field  = encodeURIComponent(sel.field);
         const values = sel.values.map(encodeURIComponent).join(",");
