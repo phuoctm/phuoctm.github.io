@@ -680,7 +680,8 @@
       parts.push("theme=" + encodeURIComponent(CONFIG.THEME));
       parts.push("appid=" + encodeURIComponent(CONFIG.APP_ID));
       parts.push("sheet=" + encodeURIComponent(sheet.id));
-      parts.push("identity=" + 'RM' + encodeURIComponent(sheet.selections));
+      parts.push("identity=" + encodeURIComponent(sheet.id));
+//      parts.push("identity=" + 'RM' + encodeURIComponent(sheet.selections));
       parts.push("opt="   + encodeURIComponent(sheet.opt || CONFIG.defaultOpt));
 
       const selections = [
