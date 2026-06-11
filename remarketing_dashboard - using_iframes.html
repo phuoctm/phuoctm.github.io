@@ -674,30 +674,6 @@
       background: var(--surface);
     }
 
-    /* Placeholder shown while a sheet waits in the staggered
-       load queue (its iframe has no src yet). The iframe element
-       already reserves the height, so layout never shifts. */
-    .sheet-frame.is-pending::after {
-      content: "Loading sheet…";
-      position: absolute;
-      inset: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-family: var(--font-mono);
-      font-size: 11px;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: var(--muted-2);
-      background: var(--surface-2);
-      animation: pendingPulse 1.6s ease-in-out infinite;
-      pointer-events: none;
-    }
-    @keyframes pendingPulse {
-      0%,100% { opacity: 1; }
-      50%     { opacity: 0.55; }
-    }
-
     /* Fullscreen mode for a sheet section.
        Flexbox lets the iframe take exactly the remaining vertical
        space — no fragile calc() math, no inner scrollbar. The body
@@ -917,15 +893,12 @@
       sec.appendChild(head);
 
       const frame = document.createElement("div");
-      frame.className = "sheet-frame is-pending";
-      // The iframe starts WITHOUT src. If every sheet boots at once
-      // they all fight for CPU and the first (visible) sheet paints
-      // last — the staggered loader below promotes data-src → src
-      // so sheet 01 gets the machine to itself, then the rest follow.
-      // (loading="lazy" can't do this: Chrome's lazy threshold is so
-      // large that all sheets start within a couple of seconds anyway.)
+      frame.className = "sheet-frame";
+      // loading="lazy" → off-screen iframes don't load until you scroll near them.
+      // This keeps the initial page snappy even with 12 sheets.
       frame.innerHTML =
-        '<iframe data-src="' + url + '" ' +
+        '<iframe src="' + url + '" ' +
+                'loading="lazy" ' +
                 'referrerpolicy="origin" ' +
                 'style="height:' + height + ';" ' +
                 'title="' + sheet.title + '" ' +
@@ -934,82 +907,6 @@
 
       sheetsRoot.appendChild(sec);
     });
-
-    // ─── Staggered iframe loading ───
-    // Sheet 01 loads alone so it paints fast; once it has settled,
-    // the rest are released through a small queue. Scrolling toward
-    // an unloaded sheet moves it to the front; clicking its menu
-    // entry or fullscreening it loads it immediately.
-    const FIRST_SETTLE_MS = 2500;  // CPU headroom for sheet 01 after its document loads
-    const SETTLE_MS       = 800;   // breathing room between later releases
-    const MAX_CONCURRENT  = 2;     // parallel loads once sheet 01 is done
-    const LOAD_TIMEOUT_MS = 15000; // free a stuck slot (auth redirect, CSP block…)
-
-    const loadQueue = [...sheetsRoot.querySelectorAll("iframe[data-src]")];
-    let inFlight = 0;
-    let slots = 1; // only sheet 01 until its first release widens the queue
-
-    function startLoad(iframe) {
-      const settle = slots === 1 ? FIRST_SETTLE_MS : SETTLE_MS;
-      inFlight++;
-      let released = false;
-      const release = () => {
-        if (released) return;
-        released = true;
-        slots = MAX_CONCURRENT;
-        setTimeout(() => { inFlight--; pumpQueue(); }, settle);
-      };
-      iframe.addEventListener("load", () => {
-        const frame = iframe.closest(".sheet-frame");
-        if (frame) frame.classList.remove("is-pending");
-        release();
-      }, { once: true });
-      // The load event never fires if the tenant blocks the frame or
-      // an auth redirect dies inside it — don't let that stall the rest.
-      setTimeout(release, LOAD_TIMEOUT_MS);
-      iframe.src = iframe.dataset.src;
-      iframe.removeAttribute("data-src");
-    }
-
-    function pumpQueue() {
-      while (inFlight < slots && loadQueue.length) {
-        startLoad(loadQueue.shift());
-      }
-    }
-
-    // Pull a section's iframe out of queue order. `immediate` loads it
-    // right away regardless of free slots (user explicitly asked for it);
-    // otherwise it just moves to the front.
-    function prioritizeSheet(sec, immediate) {
-      const iframe = sec && sec.querySelector("iframe[data-src]");
-      if (!iframe) return;
-      const i = loadQueue.indexOf(iframe);
-      if (i === -1) return;
-      loadQueue.splice(i, 1);
-      if (immediate) {
-        startLoad(iframe);
-      } else {
-        loadQueue.unshift(iframe);
-        pumpQueue();
-      }
-    }
-
-    // Scrolling within half a viewport of an unloaded sheet bumps it
-    // to the front of the queue.
-    const loadObs = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) prioritizeSheet(entry.target, false);
-      });
-    }, { rootMargin: "50% 0px" });
-    document.querySelectorAll("section.sheet").forEach(s => loadObs.observe(s));
-
-    // Menu navigation is an explicit ask — load that sheet now.
-    menuList.addEventListener("click", (e) => {
-      const a = e.target.closest("a[data-anchor]");
-      if (a) prioritizeSheet(document.getElementById(a.dataset.anchor), true);
-    });
-
-    pumpQueue();
 
     // Fullscreen toggle — also flips a body class so the menu slides away.
     document.addEventListener("click", (e) => {
@@ -1029,7 +926,6 @@
       sec.classList.toggle("is-fullscreen", becomingFs);
       btn.textContent = becomingFs ? "Exit" : "Fullscreen";
       document.body.classList.toggle("fullscreen-active", becomingFs);
-      if (becomingFs) prioritizeSheet(sec, true);
       updateNavButtons();
     });
 
@@ -1053,7 +949,6 @@
       target.classList.add("is-fullscreen");
       const targetBtn = target.querySelector("[data-fullscreen]");
       if (targetBtn) targetBtn.textContent = "Exit";
-      prioritizeSheet(target, true);
 
       // Sync document scroll so exiting fullscreen lands on this section.
       // Direct assignment to scrollTop bypasses html { scroll-behavior: smooth }

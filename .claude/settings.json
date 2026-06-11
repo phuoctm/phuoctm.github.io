@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(Get-ChildItem *)",
+      "PowerShell(Set-Location *)",
+      "PowerShell(Select-String *)",
+      "PowerShell(Test-NetConnection *)",
+      "mcp__Claude_in_Chrome__read_network_requests",
+      "mcp__Claude_in_Chrome__read_console_messages",
+      "mcp__Claude_in_Chrome__tabs_context_mcp"
+    ]
+  }
+}

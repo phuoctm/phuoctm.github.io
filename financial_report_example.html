@@ -3,15 +3,15 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Remarketing KPIs — Dashboard</title>
+  <title>Financial Report — Example</title>
 
   <!--
     ============================================================
-      3stepIT Remarketing KPIs — STANDALONE DASHBOARD (iframe edition)
+      Financial Hub — STANDALONE REPORT EXAMPLE (iframe edition)
     ============================================================
 
-      One-page vertical scroll of every sheet in the Qlik
-      "Operational KPIs" production app, with a persistent
+      One-page vertical scroll of the main sheets in the Qlik
+      "Financial Hub - TEST" demo app, with a persistent
       left-side menu for quick navigation.
 
       Built on plain <iframe> tags + Qlik's Single Integration
@@ -19,12 +19,12 @@
       JavaScript module loading from the Qlik tenant.
 
     -----------  HOW IT AUTHENTICATES  -----------
-      Each iframe loads a URL on 3stepit.de.qlikcloud.com.
+      Each iframe loads a URL on goodin.eu.qlikcloud.com.
       If you are already logged in to Qlik Cloud in this
       browser, the iframes just render. If you're not, the
       iframes try to redirect through Qlik's login — that
       usually fails inside an iframe, so the simplest flow is:
-      open https://3stepit.de.qlikcloud.com in another tab
+      open https://goodin.eu.qlikcloud.com in another tab
       first, sign in, then load this page.
 
     -----------  USING THIS FILE AS A TEMPLATE  -----------
@@ -82,7 +82,7 @@
                                    (per-sheet selections still apply)
 
       Example:
-        remarketing_dashboard.html?appid=efd9bf8e-b815-4c6b-991b-64bfccdc4e35&select=Quarter,1,2,3
+        financial_report_example.html?select=Year,2025&select=Quarter,1,2
 
     -----------  ONE-TIME ADMIN ASK  -----------
       The Qlik tenant must allow this page's origin in the
@@ -109,9 +109,9 @@
     // parameters so each one can be overridden 1:1 from the query
     // string (see "URL PARAMETER OVERRIDES" above).
     window.CONFIG = {
-      host:  "3stepit.de.qlikcloud.com",
-      appid: "cf8d9823-a353-46f5-9bc5-92a64ff3082c", // Production (production-version)
-      theme: "3stepIT-theme-for-iframe",
+      host:  "goodin.eu.qlikcloud.com",
+      appid: "001c1fd3-dc4c-41fd-ab93-28be7e60ba8a", // Financial Hub - TEST (demo app)
+      theme: "horizon",
 
       // Default options on every iframe URL. See:
       // https://help.qlik.com/en-US/cloud-services/Subsystems/Hub/Content/Sense_Hub/Embed/embed-sheet-app.htm
@@ -127,13 +127,13 @@
     // contain markup — e.g. <em> for the accent-colored italic
     // words in titles, <strong> for emphasis in the lead.
     window.PAGE = {
-      documentTitle: "Remarketing KPIs — Dashboard",      // browser tab title
-      brand:         "3stepIT / Analytics",               // small caps line above the menu title
-      menuTitle:     "Remarketing <em>KPIs</em>",         // sidebar title (HTML)
-      menuSubtitle:  "Production app · iframe edition",   // line under the sidebar title
-      heroTitle:     "Remarketing <em>KPIs</em>, on one page.", // big page heading (HTML)
+      documentTitle: "Financial Report — Example",        // browser tab title
+      brand:         "Goodin / Analytics",                // small caps line above the menu title
+      menuTitle:     "Financial <em>Report</em>",         // sidebar title (HTML)
+      menuSubtitle:  "Financial Hub demo app · iframe edition", // line under the sidebar title
+      heroTitle:     "Financial <em>reporting</em>, on one page.", // big page heading (HTML)
       heroLead:                                           // paragraph under the heading (HTML)
-        "Relevant sheets and selections from <strong>Production</strong> Qlik app. " +
+        "Relevant sheets and selections from the <strong>Financial Hub</strong> Qlik app. " +
         "Navigate with the menu on the left, or just keep scrolling. " +
         "Each sheet runs in its own embedded session — make selections " +
         "on one without affecting the others.",
@@ -148,8 +148,8 @@
     // Concatenated with each sheet's own `selections` before
     // building the URL.
     window.GLOBAL_SELECTIONS = [
-      { field: "Year", values: [2026] },
-      { field: "Quarter", values: [1, 2] }
+      // None by default — the demo app's sheets carry their own context.
+      // Add entries like { field: "Year", values: [2025] } as needed.
     ];
 
     // ─── URL parameter overrides ───
@@ -192,42 +192,29 @@
     //   selections  – array of {field, values} to apply to this sheet's URL.
     //                 Each entry becomes a separate &select=field,v1,v2,...
     window.SHEETS = [
-      { id: "55c7767f-b7cb-4b4c-b83e-10485a2869ef",
-        title: "Remarketing Overview",
-        subtitle: "Actuals/Forecasts vs. SOP Target" },
+      { id: "e336eae0-8d6e-4f50-a213-dbc0422e35fe",
+        title: "KPI Dashboard",
+        subtitle: "Headline financial KPIs at a glance" },
 
-      { id: "e1fcb7f7-e183-4b9c-b460-7ca5a13f1952",
-        title: "Trading Volume",
-        subtitle: "# Sold Units by NAV Transfer Date",
-        selections: [{ field: "Measure", values: ["# Sold Units"] }] },
+      { id: "26822750-a67d-451a-9a4f-7d41e0af9fcf",
+        title: "Key Financials",
+        subtitle: "Sales, margin and result development" },
 
-      { id: "e1fcb7f7-e183-4b9c-b460-7ca5a13f1952",
-        title: "Trading Device Sales € excl. Recycling",
-        subtitle: "By NAV Transfer Date",
-        selections: [{ field: "Measure", values: ["Trading Device Sales"] }] },
+      { id: "5ff31bda-c1be-4dbd-b52b-6e64836f0990",
+        title: "Sales and Margin",
+        subtitle: "Sales and margin breakdown" },
 
-      { id: "67c23dcb-39f8-496b-928b-d09305ff09ef",
-        title: "Average Trading Price €/pcs",
-        subtitle: "# Sold Units by NAV Transfer Date",
-        selections: [{ field: "Measure", values: ["Average Price"] }] },
+      { id: "cff28b57-7e20-4a8b-bb4c-d4bc721ea73f",
+        title: "Profitability and Costs",
+        subtitle: "Profitability drivers and cost structure" },
 
-      { id: "8554e65c-3dcb-4756-aa00-bae81fa35780",
-        title: "Trading Orders In Progress",
-        subtitle: "Device Count and Value of Remarketing Orders Not Yet In Completed Status" },
-      
-      { id: "f9bb5977-3fdc-484d-82f3-a54b4c795368",
-        title: "Devices In Stock",
-        subtitle: "All Devices from Inbound to Shipment" },
+      { id: "8bd6fda4-6d95-42b9-b22d-ee07e68d6711",
+        title: "KPI Table",
+        subtitle: "All KPIs in one table view" }
 
-      { id: "e1fcb7f7-e183-4b9c-b460-7ca5a13f1952",
-        title: "Production Volume",
-        subtitle: "# Produced Units by Quality Check Date",
-        selections: [{ field: "Measure", values: ["# Produced Units"] }] },
-
-      { id: "e1fcb7f7-e183-4b9c-b460-7ca5a13f1952",
-        title: "Sourcing Volume",
-        subtitle: "# Inventoried Units by Receive Date",
-        selections: [{ field: "Measure", values: ["# Received Units"] }] }
+      // Not included — subscription-layout duplicates of the above:
+      //   db8e72be-a86f-429e-ae14-2a0aa799839a  "Key Financials subscription"
+      //   9e64a726-74fc-4ee5-a68a-0caed14ff855  "Sales and Margin subscrition"
     ];
 
     /* EXAMPLES of sheet-specific options — copy and adapt:
@@ -674,30 +661,6 @@
       background: var(--surface);
     }
 
-    /* Placeholder shown while a sheet waits in the staggered
-       load queue (its iframe has no src yet). The iframe element
-       already reserves the height, so layout never shifts. */
-    .sheet-frame.is-pending::after {
-      content: "Loading sheet…";
-      position: absolute;
-      inset: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-family: var(--font-mono);
-      font-size: 11px;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: var(--muted-2);
-      background: var(--surface-2);
-      animation: pendingPulse 1.6s ease-in-out infinite;
-      pointer-events: none;
-    }
-    @keyframes pendingPulse {
-      0%,100% { opacity: 1; }
-      50%     { opacity: 0.55; }
-    }
-
     /* Fullscreen mode for a sheet section.
        Flexbox lets the iframe take exactly the remaining vertical
        space — no fragile calc() math, no inner scrollbar. The body
@@ -917,15 +880,12 @@
       sec.appendChild(head);
 
       const frame = document.createElement("div");
-      frame.className = "sheet-frame is-pending";
-      // The iframe starts WITHOUT src. If every sheet boots at once
-      // they all fight for CPU and the first (visible) sheet paints
-      // last — the staggered loader below promotes data-src → src
-      // so sheet 01 gets the machine to itself, then the rest follow.
-      // (loading="lazy" can't do this: Chrome's lazy threshold is so
-      // large that all sheets start within a couple of seconds anyway.)
+      frame.className = "sheet-frame";
+      // loading="lazy" → off-screen iframes don't load until you scroll near them.
+      // This keeps the initial page snappy even with 12 sheets.
       frame.innerHTML =
-        '<iframe data-src="' + url + '" ' +
+        '<iframe src="' + url + '" ' +
+                'loading="lazy" ' +
                 'referrerpolicy="origin" ' +
                 'style="height:' + height + ';" ' +
                 'title="' + sheet.title + '" ' +
@@ -934,82 +894,6 @@
 
       sheetsRoot.appendChild(sec);
     });
-
-    // ─── Staggered iframe loading ───
-    // Sheet 01 loads alone so it paints fast; once it has settled,
-    // the rest are released through a small queue. Scrolling toward
-    // an unloaded sheet moves it to the front; clicking its menu
-    // entry or fullscreening it loads it immediately.
-    const FIRST_SETTLE_MS = 2500;  // CPU headroom for sheet 01 after its document loads
-    const SETTLE_MS       = 800;   // breathing room between later releases
-    const MAX_CONCURRENT  = 2;     // parallel loads once sheet 01 is done
-    const LOAD_TIMEOUT_MS = 15000; // free a stuck slot (auth redirect, CSP block…)
-
-    const loadQueue = [...sheetsRoot.querySelectorAll("iframe[data-src]")];
-    let inFlight = 0;
-    let slots = 1; // only sheet 01 until its first release widens the queue
-
-    function startLoad(iframe) {
-      const settle = slots === 1 ? FIRST_SETTLE_MS : SETTLE_MS;
-      inFlight++;
-      let released = false;
-      const release = () => {
-        if (released) return;
-        released = true;
-        slots = MAX_CONCURRENT;
-        setTimeout(() => { inFlight--; pumpQueue(); }, settle);
-      };
-      iframe.addEventListener("load", () => {
-        const frame = iframe.closest(".sheet-frame");
-        if (frame) frame.classList.remove("is-pending");
-        release();
-      }, { once: true });
-      // The load event never fires if the tenant blocks the frame or
-      // an auth redirect dies inside it — don't let that stall the rest.
-      setTimeout(release, LOAD_TIMEOUT_MS);
-      iframe.src = iframe.dataset.src;
-      iframe.removeAttribute("data-src");
-    }
-
-    function pumpQueue() {
-      while (inFlight < slots && loadQueue.length) {
-        startLoad(loadQueue.shift());
-      }
-    }
-
-    // Pull a section's iframe out of queue order. `immediate` loads it
-    // right away regardless of free slots (user explicitly asked for it);
-    // otherwise it just moves to the front.
-    function prioritizeSheet(sec, immediate) {
-      const iframe = sec && sec.querySelector("iframe[data-src]");
-      if (!iframe) return;
-      const i = loadQueue.indexOf(iframe);
-      if (i === -1) return;
-      loadQueue.splice(i, 1);
-      if (immediate) {
-        startLoad(iframe);
-      } else {
-        loadQueue.unshift(iframe);
-        pumpQueue();
-      }
-    }
-
-    // Scrolling within half a viewport of an unloaded sheet bumps it
-    // to the front of the queue.
-    const loadObs = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) prioritizeSheet(entry.target, false);
-      });
-    }, { rootMargin: "50% 0px" });
-    document.querySelectorAll("section.sheet").forEach(s => loadObs.observe(s));
-
-    // Menu navigation is an explicit ask — load that sheet now.
-    menuList.addEventListener("click", (e) => {
-      const a = e.target.closest("a[data-anchor]");
-      if (a) prioritizeSheet(document.getElementById(a.dataset.anchor), true);
-    });
-
-    pumpQueue();
 
     // Fullscreen toggle — also flips a body class so the menu slides away.
     document.addEventListener("click", (e) => {
@@ -1029,7 +913,6 @@
       sec.classList.toggle("is-fullscreen", becomingFs);
       btn.textContent = becomingFs ? "Exit" : "Fullscreen";
       document.body.classList.toggle("fullscreen-active", becomingFs);
-      if (becomingFs) prioritizeSheet(sec, true);
       updateNavButtons();
     });
 
@@ -1053,7 +936,6 @@
       target.classList.add("is-fullscreen");
       const targetBtn = target.querySelector("[data-fullscreen]");
       if (targetBtn) targetBtn.textContent = "Exit";
-      prioritizeSheet(target, true);
 
       // Sync document scroll so exiting fullscreen lands on this section.
       // Direct assignment to scrollTop bypasses html { scroll-behavior: smooth }

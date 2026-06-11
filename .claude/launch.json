@@ -7,6 +7,13 @@
       "runtimeArgs": ["https_server.py"],
       "port": 8443,
       "autoPort": false
+    },
+    {
+      "name": "http-dev-server",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "8090"],
+      "port": 8090,
+      "autoPort": false
     }
   ]
 }

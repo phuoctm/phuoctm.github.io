@@ -16,8 +16,14 @@ ctx.load_cert_chain(CERT, KEY)
 handler = http.server.SimpleHTTPRequestHandler
 handler.directory = str(ROOT)
 
-with http.server.HTTPServer(("", PORT), handler) as httpd:
-    httpd.socket = ctx.wrap_socket(httpd.socket, server_side=True)
+# ThreadingHTTPServer + deferred TLS handshake: browsers open speculative
+# extra connections; with a single thread (or with the handshake done in
+# the accept loop) one idle connection blocks every other request and the
+# page never loads. Deferring the handshake moves it into each
+# connection's own thread.
+with http.server.ThreadingHTTPServer(("", PORT), handler) as httpd:
+    httpd.socket = ctx.wrap_socket(httpd.socket, server_side=True,
+                                   do_handshake_on_connect=False)
     print(f"Serving HTTPS at https://localhost:{PORT}")
     print("Press Ctrl+C to stop.")
     httpd.serve_forever()
