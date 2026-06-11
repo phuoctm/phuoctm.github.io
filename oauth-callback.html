@@ -1,25 +1,20 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
+  <meta charset="UTF-8" />
   <title>Signing you in…</title>
 
   <!--
     OAuth callback for the Operational KPIs dashboard.
 
-    This is intentionally tiny. The only thing on this page is
-    Qlik's official OAuth callback handler script, which:
-      • parses the auth code from the URL,
-      • exchanges it for a token,
-      • stores it in the same storage as the parent page
-        (sessionStorage by default),
-      • closes / redirects back.
+    Place this file at exactly the path you registered as
+    the Redirect URI for your Qlik OAuth2 SPA client
+    (e.g. https://localhost:8443/oauth-callback.html).
 
-    This handler is a minimal IIFE that does NOT use `eval`,
-    so it works under strict CSPs. Do not replace it with the
-    full `@qlik/embed-web-components` bundle.
-
-    The data-host MUST match the host in the main dashboard.
+    Per https://qlik.dev/embed/qlik-embed/authenticate/connect-qlik-embed/
+    this page must load the dedicated OAuth callback handler
+    from @qlik/api — it finishes the token exchange, hands the
+    token to the opener page, and closes the popup.
   -->
 
   <script
@@ -39,7 +34,10 @@
       place-items: center;
       min-height: 100vh;
     }
-    .box { text-align: center; padding: 32px 40px; }
+    .box {
+      text-align: center;
+      padding: 32px 40px;
+    }
     .dot {
       width: 8px; height: 8px;
       background: #D54B17;

@@ -5,7 +5,8 @@
       "name": "https-dev-server",
       "runtimeExecutable": "python",
       "runtimeArgs": ["https_server.py"],
-      "port": 8443
+      "port": 8443,
+      "autoPort": false
     }
   ]
 }

@@ -27,7 +27,27 @@
       open https://3stepit.de.qlikcloud.com in another tab
       first, sign in, then load this page.
 
-    -----------  HOW TO EDIT  -----------
+    -----------  USING THIS FILE AS A TEMPLATE  -----------
+      Everything you'd change for another company or another
+      Qlik app lives in exactly TWO places:
+
+      A) CONTENT — the config <script> right below this comment:
+           window.CONFIG             Qlik tenant + app + embed options
+           window.PAGE               every piece of text on the page
+                                     (titles, hero, sidebar, footer)
+           window.GLOBAL_SELECTIONS  default selections on every sheet
+           window.SHEETS             the sheet list
+         Point the dashboard at a totally different app by editing
+         only this block. No HTML or CSS below needs touching —
+         the markup is rendered from these objects.
+
+      B) THEME — the block at the top of the <style> tag (CSS
+         custom properties) plus the Google Fonts <link>. Re-skin
+         the page for a different brand by editing only that block.
+         The rest of the CSS is layout and never references raw
+         colors or font names.
+
+    -----------  EDITING SHEETS  -----------
       1. To add / remove / re-order sheets, edit the SHEETS
          array. Each entry is independent.
       2. To set a default selection that applies to every
@@ -39,6 +59,11 @@
       4. To change the iframe options (context menu, current
          selections bar, etc.), edit CONFIG.opt or set
          `opt` on a sheet.
+      5. Optional per-sheet `appid` embeds a sheet from a
+         DIFFERENT app; optional `identity` names that sheet's
+         Qlik session. When omitted they fall back to
+         CONFIG.appid and a hash of the sheet's selections
+         (sheets with identical selections share a session).
 
     -----------  URL PARAMETER OVERRIDES  -----------
       CONFIG and GLOBAL_SELECTIONS can be overridden per visit
@@ -75,6 +100,11 @@
   -->
 
   <script>
+    /* ════════════════════════════════════════════════════════
+       CONTENT CONFIG — the only block to edit when re-pointing
+       this template at a different company / Qlik app.
+       ════════════════════════════════════════════════════════ */
+
     // Keys are named after the Qlik Single Integration API URL
     // parameters so each one can be overridden 1:1 from the query
     // string (see "URL PARAMETER OVERRIDES" above).
@@ -93,9 +123,30 @@
       opt: "ctxmenu,currsel"
     };
 
+    // Every piece of text on the page. Strings marked (HTML) may
+    // contain markup — e.g. <em> for the accent-colored italic
+    // words in titles, <strong> for emphasis in the lead.
+    window.PAGE = {
+      documentTitle: "Remarketing KPIs — Dashboard",      // browser tab title
+      brand:         "3stepIT / Analytics",               // small caps line above the menu title
+      menuTitle:     "Remarketing <em>KPIs</em>",         // sidebar title (HTML)
+      menuSubtitle:  "Production app · iframe edition",   // line under the sidebar title
+      heroTitle:     "Remarketing <em>KPIs</em>, on one page.", // big page heading (HTML)
+      heroLead:                                           // paragraph under the heading (HTML)
+        "Relevant sheets and selections from <strong>Production</strong> Qlik app. " +
+        "Navigate with the menu on the left, or just keep scrolling. " +
+        "Each sheet runs in its own embedded session — make selections " +
+        "on one without affecting the others.",
+      authHint:                                           // sidebar sign-in card (HTML; link injected after it)
+        "Sheets blank? Sign in first:",
+      authLinkLabel: "open Qlik Cloud ↗",
+      authHintAfter: "then reload this page.",
+      footerAppLinkLabel: "Open full app ↗"
+    };
+
     // Selections that apply to EVERY sheet on this page.
     // Concatenated with each sheet's own `selections` before
-    // building the URL. Reaktor's default view excludes trainees.
+    // building the URL.
     window.GLOBAL_SELECTIONS = [
       { field: "Year", values: [2026] },
       { field: "Quarter", values: [1, 2] }
@@ -132,6 +183,12 @@
     //   subtitle    – short caption shown under the title
     //   height      – CSS height of the iframe (default 88vh)
     //   opt         – override default iframe options
+    //   appid       – embed this sheet from a DIFFERENT app
+    //                 (default: CONFIG.appid)
+    //   identity    – name this sheet's Qlik session (default: a
+    //                 hash of the sheet's combined selections, so
+    //                 sheets with identical selections share one
+    //                 session and stay in sync)
     //   selections  – array of {field, values} to apply to this sheet's URL.
     //                 Each entry becomes a separate &select=field,v1,v2,...
     window.SHEETS = [
@@ -173,48 +230,70 @@
         selections: [{ field: "Measure", values: ["# Received Units"] }] }
     ];
 
-    /* EXAMPLES of sheet-specific selections — copy and adapt:
+    /* EXAMPLES of sheet-specific options — copy and adapt:
 
-       // Pool page filtered to Finland:
+       // Filtered to Finland:
        { id: "b169dfd1-b98b-41b6-bfd5-e2f62eeb8582",
          title: "Pool — Finland only",
          selections: [{ field: "Country", values: ["Finland"] }] }
 
-       // Sick leaves filtered to the Aero unit, last year:
+       // Two fields filtered at once:
        { id: "28ecf415-a7f4-4a24-ac3b-a8cc1364b724",
          title: "Sick Leaves — Aero 2025",
          selections: [
            { field: "Home Unit", values: ["Aero"] },
            { field: "Year",      values: ["2025"] }
          ] }
+
+       // A sheet pulled from ANOTHER app, with its own named session:
+       { id: "55c7767f-b7cb-4b4c-b83e-10485a2869ef",
+         appid: "efd9bf8e-b815-4c6b-991b-64bfccdc4e35",
+         identity: "test-app-overview",
+         title: "Overview (test app)" }
     */
   </script>
 
+  <!-- THEME (1/2): webfonts. Swap together with --font-* below. -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300..900&family=Geist:wght@300..700&family=Geist+Mono:wght@400..600&display=swap" rel="stylesheet">
 
   <style>
+    /* ════════════════════════════════════════════════════════
+       THEME (2/2) — the visual identity of the page.
+       Re-skin for a different company by editing ONLY this
+       :root block (and the fonts <link> above). Everything
+       below it is layout and references these variables.
+       ════════════════════════════════════════════════════════ */
     :root {
-      --bg:          #F7F4EE;
-      --surface:     #FFFFFF;
-      --surface-2:   #FBF8F2;
-      --ink:         #16140E;
-      --ink-soft:    #2C281E;
-      --muted:       #6B6358;
-      --muted-2:     #948B7E;
+      /* Colors */
+      --bg:          #F7F4EE;   /* page background        */
+      --surface:     #FFFFFF;   /* cards, sidebar          */
+      --surface-2:   #FBF8F2;   /* hover / inset surfaces  */
+      --ink:         #16140E;   /* primary text            */
+      --ink-soft:    #2C281E;   /* secondary text          */
+      --muted:       #6B6358;   /* captions, meta          */
+      --muted-2:     #948B7E;   /* faint meta              */
       --border:      #E5DFD3;
       --border-strong:#C9C0B0;
-      --accent:      #D54B17;
+      --accent:      #D54B17;   /* brand color: links, highlights, <em> words */
       --accent-soft: #F2E2D6;
 
+      /* Shadows */
+      --shadow-btn:  0 2px 8px rgba(22,20,14,0.06);
+      --shadow-card: 0 1px 0 rgba(22,20,14,0.02),
+                     0 10px 30px -16px rgba(22,20,14,0.12);
+
+      /* Typography */
+      --font-display: "Fraunces", ui-serif, Georgia, serif;        /* big titles  */
+      --font-body:    "Geist", ui-sans-serif, system-ui, sans-serif;
+      --font-mono:    "Geist Mono", ui-monospace, monospace;       /* meta labels */
+
+      /* Layout (rarely themed, kept here for convenience) */
       --sidebar-w:   300px;
       --content-pad: clamp(24px, 4vw, 56px);
-
-      --font-display: "Fraunces", ui-serif, Georgia, serif;
-      --font-body:    "Geist", ui-sans-serif, system-ui, sans-serif;
-      --font-mono:    "Geist Mono", ui-monospace, monospace;
     }
+    /* ════════════════ end of THEME ════════════════ */
 
     *,*::before,*::after { box-sizing: border-box; }
     html { scroll-behavior: smooth; }
@@ -282,7 +361,7 @@
       color: var(--muted);
       cursor: pointer;
       padding: 0;
-      box-shadow: 0 2px 8px rgba(22,20,14,0.06);
+      box-shadow: var(--shadow-btn);
       transition: all 0.15s ease;
       animation: btnPop 0.22s cubic-bezier(.4,.0,.2,1);
     }
@@ -324,7 +403,7 @@
       color: var(--muted);
       cursor: pointer;
       padding: 0;
-      box-shadow: 0 2px 8px rgba(22,20,14,0.06);
+      box-shadow: var(--shadow-btn);
       transition: all 0.15s ease;
     }
     .fs-nav-btn:hover:not(:disabled) {
@@ -584,9 +663,7 @@
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: 4px;
-      box-shadow:
-        0 1px 0 rgba(22,20,14,0.02),
-        0 10px 30px -16px rgba(22,20,14,0.12);
+      box-shadow: var(--shadow-card);
       overflow: hidden;
       position: relative;
     }
@@ -662,17 +739,18 @@
         <path d="m16 15-3-3 3-3"/>
       </svg>
     </button>
+    <!-- All text below is filled in from window.PAGE / window.CONFIG. -->
     <div class="menu-brand">
       <span class="menu-brand-dot"></span>
-      3stepIT / Analytics
+      <span id="menu-brand-text"></span>
     </div>
-    <h1 class="menu-title">Remarketing <em>KPIs</em></h1>
-    <p class="menu-sub">Production app · iframe edition</p>
+    <h1 class="menu-title" id="menu-title"></h1>
+    <p class="menu-sub" id="menu-sub"></p>
 
     <div class="auth-card">
-      Sheets blank? Sign in first:
-      <a id="auth-link" href="https://3stepit.de.qlikcloud.com" target="_blank" rel="noopener">open Qlik Cloud ↗</a>
-      then reload this page.
+      <span id="auth-hint"></span>
+      <a id="auth-link" href="#" target="_blank" rel="noopener"></a>
+      <span id="auth-hint-after"></span>
     </div>
 
     <ul class="menu-list" id="menu-list"></ul>
@@ -680,7 +758,7 @@
     <div class="menu-footer">
       <div>App ID</div>
       <div id="footer-appid" style="font-family:var(--font-mono);color:var(--muted);font-size:9.5px;letter-spacing:0;margin-bottom:14px;word-break:break-all"></div>
-      <a id="footer-app-link" href="#" target="_blank" rel="noopener">Open full app ↗</a>
+      <a id="footer-app-link" href="#" target="_blank" rel="noopener"></a>
     </div>
   </aside>
 
@@ -707,13 +785,9 @@
 
   <main>
     <header class="hero">
-      <h1>Remarketing <em>KPIs</em>, on one page.</h1>
-      <p class="hero-lead">
-        Relevant sheets and selections from <strong>Production</strong> Qlik app.
-        Navigate with the menu on the left, or just keep scrolling. 
-        Each sheet runs in its own embedded session — make selections 
-        on one without affecting the others.
-      </p>
+      <!-- Filled in from window.PAGE. -->
+      <h1 id="hero-title"></h1>
+      <p class="hero-lead" id="hero-lead"></p>
     </header>
 
     <div id="sheets"></div>
@@ -721,7 +795,22 @@
 
   <script>
     
-    const { CONFIG, SHEETS, GLOBAL_SELECTIONS } = window;
+    const { CONFIG, PAGE, SHEETS, GLOBAL_SELECTIONS } = window;
+
+    // ─── Render all page text from window.PAGE ───
+    // Keeping every visible string in the config block means the
+    // HTML below never needs editing when this template is pointed
+    // at another app. innerHTML is used where (HTML) is allowed.
+    document.title = PAGE.documentTitle;
+    document.getElementById("menu-brand-text").textContent = PAGE.brand;
+    document.getElementById("menu-title").innerHTML        = PAGE.menuTitle;
+    document.getElementById("menu-sub").textContent        = PAGE.menuSubtitle;
+    document.getElementById("hero-title").innerHTML        = PAGE.heroTitle;
+    document.getElementById("hero-lead").innerHTML         = PAGE.heroLead;
+    document.getElementById("auth-hint").innerHTML         = PAGE.authHint;
+    document.getElementById("auth-hint-after").innerHTML   = PAGE.authHintAfter;
+    document.getElementById("auth-link").textContent       = PAGE.authLinkLabel;
+    document.getElementById("footer-app-link").textContent = PAGE.footerAppLinkLabel;
 
     // Sidebar links reflect CONFIG, including any URL overrides.
     document.getElementById("auth-link").href = "https://" + CONFIG.host;
@@ -741,7 +830,8 @@
       const simpleHash = data => JSON.stringify(data).split('').reduce((h, c) => ((h << 5) - h) + c.charCodeAt(0) | 0, 0);
       const parts = [];
       parts.push("theme=" + encodeURIComponent(CONFIG.theme));
-      parts.push("appid=" + encodeURIComponent(CONFIG.appid));
+      // Per-sheet appid override, else the app every other sheet uses.
+      parts.push("appid=" + encodeURIComponent(sheet.appid || CONFIG.appid));
       parts.push("sheet=" + encodeURIComponent(sheet.id));
       parts.push("opt="   + encodeURIComponent(sheet.opt || CONFIG.opt));
 
@@ -749,9 +839,9 @@
         ...GLOBAL_SELECTIONS,
         ...(sheet.selections || [])
       ];
-//      parts.push("identity=" + encodeURIComponent(sheet.id));
-//      parts.push("identity=" + 'RM' + encodeURIComponent(sheet.selections));
-      parts.push("identity=" + simpleHash(selections));
+      // Per-sheet identity override, else a hash of the selections —
+      // sheets with identical selections share a Qlik session.
+      parts.push("identity=" + encodeURIComponent(sheet.identity || simpleHash(selections)));
       selections.forEach(sel => {
         const field  = encodeURIComponent(sel.field);
         const values = sel.values.map(encodeURIComponent).join(",");

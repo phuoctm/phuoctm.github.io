@@ -39,16 +39,7 @@
   -->
 
   <!-- ─────────────  CONFIG  ───────────── -->
-    <script
-        crossorigin="anonymous"
-        type="application/javascript"
-        src="https://cdn.jsdelivr.net/npm/@qlik/embed-web-components@1/dist/index.min.js"
-        data-host="https://reaktor.eu.qlikcloud.com"
-        data-client-id="019e4af33a18c45debf76c1b45cb6f4f"
-        data-redirect-uri="https://phuoctm.github.io/oauth-callback.html"
-        data-auto-redirect="false"
-        data-access-token-storage="session"
-      
+  <script>
     // Qlik tenant — Reaktor production
     window.QLIK_CONFIG = {
       HOST:           "reaktor.eu.qlikcloud.com",
@@ -157,18 +148,20 @@
   <!-- ─────────────  qlik-embed runtime  ─────────────
        The data-* attributes on this script tag configure
        OAuth2 SPA authentication for every <qlik-embed> on the
-       page. No further auth setup is needed in JS. 
+       page. No further auth setup is needed in JS. -->
   <script
+    id="qlik-embed-script"
     crossorigin="anonymous"
     type="application/javascript"
     data-host="https://reaktor.eu.qlikcloud.com"
-    data-client-id="019e4af33a18c45debf76c1b45cb6f4f"  id="qlik-embed-script"
-    data-redirect-uri="https://phuoctm.github.io/oauth-callback.html"
+    data-client-id="019e4af33a18c45debf76c1b45cb6f4f"
+    data-redirect-uri="https://localhost:8443/oauth-callback.html"
     data-access-token-storage="session"
     data-auth-type="Oauth2"
+    data-auto-redirect="true"
     src="https://cdn.jsdelivr.net/npm/@qlik/embed-web-components"
   ></script>
-  -->
+
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -397,9 +390,9 @@
       text-transform: uppercase;
       color: var(--muted);
     }
-    .topbar qlik-embed {
+    .topbar-embed {
       flex: 1 1 auto;
-      min-height: 32px;
+      height: 44px;
     }
 
     /* Page hero */
@@ -506,7 +499,10 @@
       text-transform: uppercase;
     }
 
-    /* The actual Qlik embed container */
+    /* The actual Qlik embed container.
+       qlik-embed renders with display:contents, so its content
+       resolves percentage heights against THIS box — it must have
+       a definite `height`, not just min-height. */
     .sheet-embed {
       background: var(--surface);
       border: 1px solid var(--border);
@@ -515,14 +511,8 @@
       box-shadow:
         0 1px 0 rgba(22,20,14,0.02),
         0 10px 30px -16px rgba(22,20,14,0.12);
-      min-height: 88vh;
+      height: 88vh;
       position: relative;
-    }
-    .sheet-embed qlik-embed {
-      display: block;
-      width: 100%;
-      height: 100%;
-      min-height: calc(88vh - 24px);
     }
 
     /* Error/warning panel for unconfigured state */
@@ -601,7 +591,9 @@
     <!-- Sticky top bar: shared selections (only visible when at least one sheet is in shared mode) -->
     <div class="topbar" id="topbar" style="display:none">
       <span class="topbar-label">Filters</span>
-      <qlik-embed id="global-selections" ui="analytics/selections"></qlik-embed>
+      <div class="topbar-embed">
+        <qlik-embed id="global-selections" ui="analytics/selections" app-id="0f609325-88ab-4369-890f-e132107013a4"></qlik-embed>
+      </div>
     </div>
 
     <!-- Hero -->
@@ -706,7 +698,7 @@
             ${sheet.subtitle ? `<p class="sheet-subtitle">${sheet.subtitle}</p>` : ""}
           </div>
         </div>
-        <div class="sheet-embed" style="min-height:${height}">
+        <div class="sheet-embed" style="height:${height}">
           <qlik-embed
             ui="${ui}"
             app-id="${QLIK_CONFIG.APP_ID}"
@@ -792,12 +784,18 @@
         setStatus(false, "Connection error");
         console.error("qlik-embed error", e);
       });
-      // Fallback: if nothing fires within 8s, assume connected if we can find a rendered child
-      setTimeout(() => {
-        if (firstEmbed.shadowRoot && firstEmbed.shadowRoot.childElementCount > 0) {
+      // Fallback: qlik-embed renders into light-DOM children (the element
+      // itself is display:contents), so poll until content appears.
+      const poll = setInterval(() => {
+        const hasContent =
+          (firstEmbed.shadowRoot && firstEmbed.shadowRoot.childElementCount > 0) ||
+          firstEmbed.querySelector("qmfe-root > *");
+        if (hasContent) {
           setStatus(true, "Connected");
+          clearInterval(poll);
         }
-      }, 8000);
+      }, 2000);
+      setTimeout(() => clearInterval(poll), 60000);
     }
 
     // Start it once the embed runtime has loaded
