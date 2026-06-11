@@ -110,7 +110,7 @@
     // string (see "URL PARAMETER OVERRIDES" above).
     window.CONFIG = {
       host:  "3stepit.de.qlikcloud.com",
-      appid: "cf8d9823-a353-46f5-9bc5-92a64ff3082c", // Production (production-version)
+      appid: "efd9bf8e-b815-4c6b-991b-64bfccdc4e35", // Production (production-version), LATEST version: cf8d9823-a353-46f5-9bc5-92a64ff3082c
       theme: "3stepIT-theme-for-iframe",
 
       // Default options on every iframe URL. See:
@@ -130,8 +130,10 @@
       documentTitle: "Remarketing KPIs — Dashboard",      // browser tab title
       brand:         "3stepIT / Analytics",               // small caps line above the menu title
       menuTitle:     "Remarketing <em>KPIs</em>",         // sidebar title (HTML)
-      menuSubtitle:  "Production app · iframe edition",   // line under the sidebar title
+      menuSubtitle:  "Monthly management report",         // line under the sidebar title
+      heroEyebrow:   "Monthly management report",         // eyebrow label above the page heading
       heroTitle:     "Remarketing <em>KPIs</em>, on one page.", // big page heading (HTML)
+      footerTitle:   "Remarketing, full circle.",         // closing band headline
       heroLead:                                           // paragraph under the heading (HTML)
         "Relevant sheets and selections from <strong>Production</strong> Qlik app. " +
         "Navigate with the menu on the left, or just keep scrolling. " +
@@ -208,7 +210,7 @@
 
       { id: "67c23dcb-39f8-496b-928b-d09305ff09ef",
         title: "Average Trading Price €/pcs",
-        subtitle: "# Sold Units by NAV Transfer Date",
+        subtitle: "By NAV Transfer Date",
         selections: [{ field: "Measure", values: ["Average Price"] }] },
 
       { id: "8554e65c-3dcb-4756-aa00-bae81fa35780",
@@ -253,10 +255,11 @@
     */
   </script>
 
-  <!-- THEME (1/2): webfonts. Swap together with --font-* below. -->
+  <!-- THEME (1/2): webfonts. Swap together with --font-* below.
+       3stepIT brand: DM Sans for everything (one typeface). -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300..900&family=Geist:wght@300..700&family=Geist+Mono:wght@400..600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,100..1000&display=swap" rel="stylesheet">
 
   <style>
     /* ════════════════════════════════════════════════════════
@@ -266,28 +269,41 @@
        below it is layout and references these variables.
        ════════════════════════════════════════════════════════ */
     :root {
-      /* Colors */
-      --bg:          #F7F4EE;   /* page background        */
-      --surface:     #FFFFFF;   /* cards, sidebar          */
-      --surface-2:   #FBF8F2;   /* hover / inset surfaces  */
-      --ink:         #16140E;   /* primary text            */
-      --ink-soft:    #2C281E;   /* secondary text          */
-      --muted:       #6B6358;   /* captions, meta          */
-      --muted-2:     #948B7E;   /* faint meta              */
-      --border:      #E5DFD3;
-      --border-strong:#C9C0B0;
-      --accent:      #D54B17;   /* brand color: links, highlights, <em> words */
-      --accent-soft: #F2E2D6;
+      /* Colors — 3stepIT brand */
+      --bg:          #F8F8F7;   /* page: subtle off-white so cards lift   */
+      --surface:     #FFFFFF;   /* cards                                  */
+      --surface-2:   #F8F8F7;   /* subtle off-white inset surfaces        */
+      --sage:        #D3E5DD;   /* soft sage — secondary surfaces         */
+      --forest:      #002723;   /* deep forest green — dark panels        */
+      --ink:         #231F20;   /* near-black: ALL text on light bg       */
+      --ink-soft:    #231F20;
+      --muted:       #696969;   /* captions, meta                         */
+      --muted-2:     #9C9C9A;   /* faint meta                             */
+      --border:      #E6E6E6;
+      --border-strong:#D0D0D0;
+      --accent:      #2FD14D;   /* vivid spring green — actions/highlights ONLY */
+      --accent-soft: #D3E5DD;
 
-      /* Shadows */
-      --shadow-btn:  0 2px 8px rgba(22,20,14,0.06);
-      --shadow-card: 0 1px 0 rgba(22,20,14,0.02),
-                     0 10px 30px -16px rgba(22,20,14,0.12);
+      /* On-dark tokens (forest-green sidebar & footer) */
+      --on-dark:        #FFFFFF;
+      --on-dark-soft:   rgba(255,255,255,0.80);
+      --on-dark-faint:  #D3E5DD;
+      --on-dark-border: rgba(255,255,255,0.18);
+      --on-dark-hover:  rgba(255,255,255,0.08);
 
-      /* Typography */
-      --font-display: "Fraunces", ui-serif, Georgia, serif;        /* big titles  */
-      --font-body:    "Geist", ui-sans-serif, system-ui, sans-serif;
-      --font-mono:    "Geist Mono", ui-monospace, monospace;       /* meta labels */
+      /* Shadows — brand keeps these whisper-soft */
+      --shadow-btn:  0 1px 2px rgba(0,39,35,0.06);
+      --shadow-card: 0 18px 44px -32px rgba(0,39,35,0.28);
+
+      /* Typography — DM Sans for everything */
+      --font-display: "DM Sans", sans-serif;
+      --font-body:    "DM Sans", sans-serif;
+      --font-mono:    "DM Sans", sans-serif;
+
+      /* Corner radius system */
+      --radius-card: 30px;   /* cards / panels — signature look */
+      --radius-btn:  10px;   /* buttons                         */
+      --radius-sm:   8px;    /* small UI bits                   */
 
       /* Layout (rarely themed, kept here for convenience) */
       --sidebar-w:   300px;
@@ -302,20 +318,10 @@
       background: var(--bg);
       color: var(--ink);
       font-family: var(--font-body);
-      font-size: 15px;
-      line-height: 1.5;
+      font-size: 16px;
+      line-height: 1.45;
       -webkit-font-smoothing: antialiased;
       text-rendering: optimizeLegibility;
-    }
-
-    body::before {
-      content: "";
-      position: fixed; inset: 0;
-      pointer-events: none;
-      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.04 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
-      opacity: 0.6;
-      z-index: 1;
-      mix-blend-mode: multiply;
     }
 
     /* ─── Menu open/close buttons ─── */
@@ -331,16 +337,16 @@
       justify-content: center;
       background: transparent;
       border: 1px solid transparent;
-      border-radius: 4px;
-      color: var(--muted-2);
+      border-radius: var(--radius-sm);
+      color: var(--on-dark-faint);
       cursor: pointer;
       padding: 0;
-      transition: all 0.15s ease;
+      transition: all 0.15s linear;
     }
     .menu-close:hover {
       color: var(--accent);
-      border-color: var(--border-strong);
-      background: var(--surface-2);
+      border-color: var(--on-dark-border);
+      background: var(--on-dark-hover);
     }
     .menu-close svg { width: 16px; height: 16px; display: block; }
 
@@ -350,24 +356,24 @@
       top: 16px;
       left: 16px;
       z-index: 200;
-      width: 36px;
-      height: 36px;
+      width: 38px;
+      height: 38px;
       display: none;
       align-items: center;
       justify-content: center;
       background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 4px;
-      color: var(--muted);
+      border: 1px solid var(--forest);
+      border-radius: var(--radius-btn);
+      color: var(--forest);
       cursor: pointer;
       padding: 0;
       box-shadow: var(--shadow-btn);
-      transition: all 0.15s ease;
+      transition: all 0.15s linear;
       animation: btnPop 0.22s cubic-bezier(.4,.0,.2,1);
     }
     .menu-open:hover {
-      color: var(--accent);
-      border-color: var(--accent);
+      background: var(--forest);
+      color: var(--on-dark);
     }
     .menu-open svg { width: 18px; height: 18px; display: block; }
     body.menu-hidden .menu-open { display: flex; }
@@ -392,23 +398,23 @@
       display: flex;
     }
     .fs-nav-btn {
-      width: 36px;
-      height: 36px;
+      width: 38px;
+      height: 38px;
       display: flex;
       align-items: center;
       justify-content: center;
       background: var(--surface);
-      border: 1px solid var(--border-strong);
-      border-radius: 4px;
-      color: var(--muted);
+      border: 1px solid var(--forest);
+      border-radius: var(--radius-btn);
+      color: var(--forest);
       cursor: pointer;
       padding: 0;
       box-shadow: var(--shadow-btn);
-      transition: all 0.15s ease;
+      transition: all 0.15s linear;
     }
     .fs-nav-btn:hover:not(:disabled) {
-      color: var(--accent);
-      border-color: var(--accent);
+      background: var(--forest);
+      color: var(--on-dark);
     }
     .fs-nav-btn:disabled {
       opacity: 0.35;
@@ -416,20 +422,31 @@
     }
     .fs-nav-btn svg { width: 18px; height: 18px; display: block; }
 
-    /* Sidebar */
+    /* Sidebar — forest green, the brand's dark-panel treatment */
     aside.menu {
       position: fixed;
       top: 0; left: 0;
       width: var(--sidebar-w);
       height: 100vh;
       padding: 32px 24px 24px 28px;
-      background: var(--surface);
-      border-right: 1px solid var(--border);
+      background: var(--forest);
+      color: var(--on-dark);
       display: flex;
       flex-direction: column;
       z-index: 10;
       overflow-y: auto;
       transition: transform 0.28s cubic-bezier(.4,.0,.2,1);
+    }
+    /* Decorative loop motif — a faint ring peeking from the corner */
+    aside.menu::after {
+      content: "";
+      position: fixed;
+      left: -120px;
+      bottom: -120px;
+      width: 290px; height: 290px;
+      border: 1.5px solid rgba(211,229,221,0.25);
+      border-radius: 50%;
+      pointer-events: none;
     }
     /* Slide the menu off-screen when the user closes it OR when any sheet
        is fullscreen. Sliding (rather than relying on z-index) sidesteps the
@@ -442,10 +459,10 @@
     }
     .menu-brand {
       display: flex; align-items: baseline; gap: 8px;
-      font-family: var(--font-mono);
-      font-size: 11px; letter-spacing: 0.12em;
-      text-transform: uppercase; color: var(--muted);
-      margin-bottom: 6px;
+      font-size: 11px; font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase; color: var(--on-dark-faint);
+      margin-bottom: 8px;
     }
     .menu-brand-dot {
       width: 6px; height: 6px;
@@ -456,36 +473,35 @@
     }
     .menu-title {
       font-family: var(--font-display);
-      font-weight: 400; font-size: 28px;
-      letter-spacing: -0.01em; line-height: 1.05;
-      margin: 0 0 8px 0; color: var(--ink);
+      font-weight: 600; font-size: 27px;
+      letter-spacing: -0.01em; line-height: 1.1;
+      margin: 0 0 8px 0; color: var(--on-dark);
     }
     .menu-title em {
-      font-style: italic; font-weight: 300;
+      font-style: normal;
       color: var(--accent);
     }
     .menu-sub {
-      font-size: 12.5px; color: var(--muted);
+      font-size: 12.5px; color: var(--on-dark-faint);
       margin-bottom: 24px;
     }
 
     .auth-card {
-      background: var(--surface-2);
-      border: 1px solid var(--border);
-      border-radius: 4px;
+      background: var(--on-dark-hover);
+      border: 1px solid var(--on-dark-border);
+      border-radius: var(--radius-btn);
       padding: 10px 12px;
       margin-bottom: 20px;
       font-size: 12px;
       line-height: 1.5;
-      color: var(--ink-soft);
+      color: var(--on-dark-soft);
     }
     .auth-card a {
       color: var(--accent);
       text-decoration: none;
       font-weight: 500;
-      border-bottom: 1px solid var(--accent-soft);
     }
-    .auth-card a:hover { border-bottom-color: var(--accent); }
+    .auth-card a:hover { text-decoration: underline; }
 
     .menu-list { list-style: none; padding: 0; margin: 0; }
     .menu-list li { margin: 0; }
@@ -494,28 +510,28 @@
       grid-template-columns: 22px 1fr;
       align-items: baseline;
       gap: 10px;
-      padding: 9px 10px 9px 6px;
+      padding: 9px 10px 9px 8px;
       text-decoration: none;
-      color: var(--ink-soft);
-      border-radius: 4px;
-      transition: background 0.15s ease, color 0.15s ease;
+      color: var(--on-dark-soft);
+      border-radius: var(--radius-sm);
+      transition: background 0.15s linear, color 0.15s linear;
       position: relative;
     }
     .menu-list a:hover {
-      background: var(--surface-2);
-      color: var(--ink);
+      background: var(--on-dark-hover);
+      color: var(--on-dark);
     }
     .menu-list a .num {
-      font-family: var(--font-mono);
-      font-size: 10.5px;
-      color: var(--muted-2);
+      font-size: 10.5px; font-weight: 600;
+      color: var(--on-dark-faint);
+      opacity: 0.7;
       letter-spacing: 0.05em;
     }
     .menu-list a .label {
       font-size: 13.5px; line-height: 1.3;
     }
     .menu-list a.active {
-      background: var(--surface-2); color: var(--ink);
+      background: var(--on-dark-hover); color: var(--on-dark);
     }
     .menu-list a.active::before {
       content: "";
@@ -526,24 +542,25 @@
       background: var(--accent);
       border-radius: 2px;
     }
-    .menu-list a.active .num { color: var(--accent); }
+    .menu-list a.active .num { color: var(--accent); opacity: 1; }
 
     .menu-footer {
       margin-top: auto;
       padding-top: 24px;
-      font-family: var(--font-mono);
-      font-size: 10px;
+      font-size: 10px; font-weight: 600;
       letter-spacing: 0.08em;
-      color: var(--muted-2);
+      color: var(--on-dark-faint);
+      opacity: 0.85;
       text-transform: uppercase;
       line-height: 1.6;
+      position: relative; /* keep above the decorative ring */
     }
     .menu-footer a {
-      color: var(--muted);
+      color: var(--accent);
       text-decoration: none;
-      border-bottom: 1px dotted var(--border-strong);
+      font-weight: 600;
     }
-    .menu-footer a:hover { color: var(--accent); }
+    .menu-footer a:hover { color: var(--on-dark); text-decoration: underline; }
 
     /* Main */
     main {
@@ -559,40 +576,63 @@
     }
 
     .hero {
-      padding: 64px 0 48px;
+      padding: 80px 0 64px;
       border-bottom: 1px solid var(--border);
+      position: relative;
+      overflow: hidden;
     }
-    .hero-meta {
-      font-family: var(--font-mono);
-      font-size: 11px;
-      letter-spacing: 0.12em;
+    /* Circular "full circle" motif — concentric sage rings, top right */
+    .hero::before, .hero::after {
+      content: "";
+      position: absolute;
+      border-radius: 50%;
+      border: 2px solid var(--sage);
+      pointer-events: none;
+      transition: transform 0.3s ease-in-out;
+    }
+    .hero::before {
+      width: 460px; height: 460px;
+      top: -180px; right: -120px;
+    }
+    .hero::after {
+      width: 300px; height: 300px;
+      top: -100px; right: -40px;
+      border-color: rgba(211,229,221,0.6);
+    }
+    .hero:hover::before { transform: scale(1.06); }
+    .hero:hover::after  { transform: scale(1.04); }
+    .hero-eyebrow {
+      font-size: 16px;
+      line-height: 1.3;
+      font-weight: 600;
       text-transform: uppercase;
-      color: var(--muted);
-      margin-bottom: 18px;
-      display: flex;
-      gap: 18px;
-      flex-wrap: wrap;
+      letter-spacing: 0.04em;
+      color: var(--ink);
+      margin: 0 0 16px;
+      position: relative;
     }
-    .hero-meta span { display: inline-flex; gap: 6px; align-items: center; }
-    .hero-meta .dot { color: var(--accent); }
     .hero h1 {
       font-family: var(--font-display);
-      font-weight: 300;
-      font-size: clamp(40px, 5.5vw, 72px);
-      line-height: 1;
-      letter-spacing: -0.025em;
+      font-weight: 600;
+      font-size: clamp(40px, 4.6vw, 66px);
+      line-height: 1.15;
+      letter-spacing: -0.015em;
       margin: 0 0 18px 0;
       color: var(--ink);
+      position: relative;
+      max-width: 18ch;
     }
     .hero h1 em {
-      font-style: italic; font-weight: 300;
+      font-style: normal;
       color: var(--accent);
     }
     .hero-lead {
-      max-width: 640px;
-      font-size: 16.5px;
-      line-height: 1.55;
-      color: var(--ink-soft);
+      max-width: 620px;
+      font-size: 20px;
+      line-height: 1.3;
+      font-weight: 500;
+      color: var(--ink);
+      position: relative;
     }
 
     /* Sheet section */
@@ -612,25 +652,25 @@
     }
     .sheet-num {
       font-family: var(--font-display);
-      font-weight: 300;
-      font-size: 64px;
+      font-weight: 600;
+      font-size: 56px;
       line-height: 1;
       color: var(--accent);
-      letter-spacing: -0.03em;
+      letter-spacing: -0.02em;
       font-feature-settings: "tnum" 1;
     }
     .sheet-title-block h2 {
       font-family: var(--font-display);
-      font-weight: 400;
-      font-size: clamp(28px, 3.2vw, 40px);
-      line-height: 1.05;
-      letter-spacing: -0.015em;
-      margin: 6px 0 8px;
+      font-weight: 600;
+      font-size: clamp(26px, 2.8vw, 38px);
+      line-height: 1.15;
+      letter-spacing: -0.01em;
+      margin: 4px 0 8px;
       color: var(--ink);
     }
     .sheet-subtitle {
       color: var(--muted);
-      font-size: 15px;
+      font-size: 16px;
       max-width: 660px;
       margin: 0 0 10px;
     }
@@ -640,29 +680,30 @@
       align-self: end;
       padding-bottom: 6px;
     }
+    /* 3stepIT "Accent 2" button: dark outline → fills forest on hover */
     .btn {
-      font-family: var(--font-mono);
-      font-size: 10.5px;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--muted);
-      background: var(--surface);
-      border: 1px solid var(--border-strong);
-      border-radius: 3px;
-      padding: 6px 12px;
+      font-family: var(--font-body);
+      font-size: 14px;
+      font-weight: 500;
+      line-height: 1;
+      color: var(--forest);
+      background: transparent;
+      border: 1px solid var(--forest);
+      border-radius: var(--radius-btn);
+      padding: 10px 18px;
       text-decoration: none;
       cursor: pointer;
-      transition: all 0.15s ease;
+      transition: all 0.15s linear;
     }
     .btn:hover {
-      color: var(--accent);
-      border-color: var(--accent);
+      background: var(--forest);
+      color: var(--on-dark);
     }
 
     .sheet-frame {
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 4px;
+      border-radius: var(--radius-card);
       box-shadow: var(--shadow-card);
       overflow: hidden;
       position: relative;
@@ -684,18 +725,83 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      font-family: var(--font-mono);
-      font-size: 11px;
-      letter-spacing: 0.12em;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
       text-transform: uppercase;
-      color: var(--muted-2);
-      background: var(--surface-2);
+      color: var(--forest);
+      background: var(--sage);
       animation: pendingPulse 1.6s ease-in-out infinite;
       pointer-events: none;
     }
     @keyframes pendingPulse {
       0%,100% { opacity: 1; }
       50%     { opacity: 0.55; }
+    }
+
+    /* ─── Closing band — forest green, brand CTA-band pattern ─── */
+    .page-footer {
+      margin-top: 72px;
+      background: var(--forest);
+      border-radius: var(--radius-card);
+      padding: 56px;
+      color: var(--on-dark);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 28px;
+      flex-wrap: wrap;
+      position: relative;
+      overflow: hidden;
+    }
+    /* Decorative circle that scales gently on hover (brand signature) */
+    .page-footer::before {
+      content: "";
+      position: absolute;
+      right: -140px; top: 50%;
+      width: 420px; height: 420px;
+      margin-top: -210px;
+      border: 2px solid rgba(211,229,221,0.25);
+      border-radius: 50%;
+      transition: transform 0.3s ease-in-out;
+      pointer-events: none;
+    }
+    .page-footer:hover::before { transform: scale(1.12); }
+    .page-footer-eyebrow {
+      font-size: 13px; font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--on-dark-faint);
+      margin-bottom: 10px;
+    }
+    .page-footer-title {
+      font-family: var(--font-display);
+      font-weight: 600;
+      font-size: clamp(24px, 2.6vw, 34px);
+      line-height: 1.2;
+    }
+    /* Primary-on-dark button: spring green, white on hover */
+    .btn-footer {
+      position: relative;
+      display: inline-block;
+      background: var(--accent);
+      color: var(--ink);
+      border: 1px solid var(--accent);
+      border-radius: var(--radius-btn);
+      padding: 16px 24px;
+      font-size: 16px;
+      font-weight: 500;
+      text-decoration: none;
+      transition: all 0.15s linear;
+      white-space: nowrap;
+    }
+    .btn-footer:hover {
+      background: var(--on-dark);
+      border-color: var(--on-dark);
+      color: var(--ink);
+    }
+    @media (max-width: 900px) {
+      .page-footer { padding: 36px 28px; margin-top: 48px; }
     }
 
     /* Fullscreen mode for a sheet section.
@@ -736,20 +842,26 @@
         position: static;
         width: 100%;
         height: auto;
-        border-right: none;
-        border-bottom: 1px solid var(--border);
         padding: 20px 20px 16px;
       }
+      aside.menu::after { display: none; }
       .menu-list { display: flex; flex-wrap: wrap; gap: 4px; }
       .menu-list a { padding: 6px 10px; }
       .menu-list a.active::before { display: none; }
       main { padding: 0 20px 60px; }
+      .hero { padding: 48px 0 40px; }
+      .hero h1 { font-size: 40px; line-height: 1.15; }
+      .hero-lead { font-size: 18px; line-height: 1.45; }
+      .hero::before { width: 300px; height: 300px; top: -140px; right: -120px; }
+      .hero::after  { width: 190px; height: 190px; top: -80px; right: -60px; }
       .sheet-head {
         grid-template-columns: 60px 1fr;
         gap: 14px;
       }
       .sheet-actions { grid-column: 1 / -1; align-self: start; padding: 0; }
-      .sheet-num { font-size: 44px; }
+      .sheet-num { font-size: 40px; }
+      .sheet-frame { border-radius: 20px; }
+      .btn { font-size: 14px; padding: 9px 16px; }
     }
   </style>
 </head>
@@ -781,7 +893,7 @@
 
     <div class="menu-footer">
       <div>App ID</div>
-      <div id="footer-appid" style="font-family:var(--font-mono);color:var(--muted);font-size:9.5px;letter-spacing:0;margin-bottom:14px;word-break:break-all"></div>
+      <div id="footer-appid" style="color:var(--on-dark-faint);font-weight:400;font-size:9.5px;letter-spacing:0;margin-bottom:14px;word-break:break-all"></div>
       <a id="footer-app-link" href="#" target="_blank" rel="noopener"></a>
     </div>
   </aside>
@@ -810,11 +922,21 @@
   <main>
     <header class="hero">
       <!-- Filled in from window.PAGE. -->
+      <p class="hero-eyebrow" id="hero-eyebrow"></p>
       <h1 id="hero-title"></h1>
       <p class="hero-lead" id="hero-lead"></p>
     </header>
 
     <div id="sheets"></div>
+
+    <footer class="page-footer">
+      <!-- Filled in from window.PAGE / window.CONFIG. -->
+      <div>
+        <div class="page-footer-eyebrow" id="page-footer-brand"></div>
+        <div class="page-footer-title" id="page-footer-title"></div>
+      </div>
+      <a class="btn-footer" id="page-footer-link" href="#" target="_blank" rel="noopener"></a>
+    </footer>
   </main>
 
   <script>
@@ -829,8 +951,12 @@
     document.getElementById("menu-brand-text").textContent = PAGE.brand;
     document.getElementById("menu-title").innerHTML        = PAGE.menuTitle;
     document.getElementById("menu-sub").textContent        = PAGE.menuSubtitle;
+    document.getElementById("hero-eyebrow").textContent    = PAGE.heroEyebrow;
     document.getElementById("hero-title").innerHTML        = PAGE.heroTitle;
     document.getElementById("hero-lead").innerHTML         = PAGE.heroLead;
+    document.getElementById("page-footer-brand").textContent = PAGE.brand;
+    document.getElementById("page-footer-title").textContent = PAGE.footerTitle;
+    document.getElementById("page-footer-link").textContent  = PAGE.footerAppLinkLabel;
     document.getElementById("auth-hint").innerHTML         = PAGE.authHint;
     document.getElementById("auth-hint-after").innerHTML   = PAGE.authHintAfter;
     document.getElementById("auth-link").textContent       = PAGE.authLinkLabel;
@@ -840,6 +966,8 @@
     document.getElementById("auth-link").href = "https://" + CONFIG.host;
     document.getElementById("footer-appid").textContent = CONFIG.appid;
     document.getElementById("footer-app-link").href =
+      "https://" + CONFIG.host + "/sense/app/" + encodeURIComponent(CONFIG.appid);
+    document.getElementById("page-footer-link").href =
       "https://" + CONFIG.host + "/sense/app/" + encodeURIComponent(CONFIG.appid);
 
     // Build a Single Integration API URL for one sheet.
