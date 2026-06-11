@@ -37,8 +37,27 @@
          and per-sheet selections are concatenated into the
          iframe's URL.
       4. To change the iframe options (context menu, current
-         selections bar, etc.), edit `defaultOpt` or set
+         selections bar, etc.), edit CONFIG.opt or set
          `opt` on a sheet.
+
+    -----------  URL PARAMETER OVERRIDES  -----------
+      CONFIG and GLOBAL_SELECTIONS can be overridden per visit
+      with query parameters that use the same names as Qlik's
+      Single Integration API (https://qlik.dev/apis/javascript/single-integration/):
+
+        ?appid=<app GUID>          override CONFIG.appid
+        ?theme=<theme id>          override CONFIG.theme
+        ?opt=<opt1,opt2>           override CONFIG.opt
+        ?host=<tenant host>        override CONFIG.host (not part of
+                                   the Qlik API — page-specific)
+        ?select=Field,v1,v2        REPLACE GLOBAL_SELECTIONS. Repeat
+                                   the parameter for multiple fields:
+                                   &select=Year,2026&select=Quarter,1,2
+        ?select=clearall           drop GLOBAL_SELECTIONS entirely
+                                   (per-sheet selections still apply)
+
+      Example:
+        remarketing_dashboard.html?appid=efd9bf8e-b815-4c6b-991b-64bfccdc4e35&select=Quarter,1,2,3
 
     -----------  ONE-TIME ADMIN ASK  -----------
       The Qlik tenant must allow this page's origin in the
@@ -56,10 +75,13 @@
   -->
 
   <script>
+    // Keys are named after the Qlik Single Integration API URL
+    // parameters so each one can be overridden 1:1 from the query
+    // string (see "URL PARAMETER OVERRIDES" above).
     window.CONFIG = {
-      HOST:   "3stepit.de.qlikcloud.com",
-      APP_ID: "cf8d9823-a353-46f5-9bc5-92a64ff3082c", // Production (production-version)
-      THEME: "3stepIT-theme-for-iframe",
+      host:  "3stepit.de.qlikcloud.com",
+      appid: "cf8d9823-a353-46f5-9bc5-92a64ff3082c", // Production (production-version)
+      theme: "3stepIT-theme-for-iframe",
 
       // Default options on every iframe URL. See:
       // https://help.qlik.com/en-US/cloud-services/Subsystems/Hub/Content/Sense_Hub/Embed/embed-sheet-app.htm
@@ -68,7 +90,7 @@
       //   nointeraction – read-only, no selecting
       //   noselections  – hide the selections bar
       //   noanimate     – disable animations
-      defaultOpt: "ctxmenu,currsel"
+      opt: "ctxmenu,currsel"
     };
 
     // Selections that apply to EVERY sheet on this page.
@@ -78,6 +100,31 @@
       { field: "Year", values: [2026] },
       { field: "Quarter", values: [1, 2] }
     ];
+
+    // ─── URL parameter overrides ───
+    // Same parameter names and syntax as the Qlik Single Integration
+    // API, so a working /single/ query string can be pasted onto this
+    // page's URL. `select=` params REPLACE GLOBAL_SELECTIONS (repeat
+    // the param for several fields); `select=clearall` empties them.
+    (function applyUrlOverrides() {
+      const params = new URLSearchParams(window.location.search);
+
+      ["host", "appid", "theme", "opt"].forEach(key => {
+        const v = params.get(key);
+        if (v) window.CONFIG[key] = v;
+      });
+
+      const selects = params.getAll("select");
+      if (selects.length) {
+        window.GLOBAL_SELECTIONS = selects
+          .filter(s => s && s.toLowerCase() !== "clearall")
+          .map(s => {
+            const [field, ...values] = s.split(",");
+            return { field, values };
+          })
+          .filter(sel => sel.field && sel.values.length);
+      }
+    })();
 
     // Each entry becomes one section.
     // Required: id, title.
@@ -624,7 +671,7 @@
 
     <div class="auth-card">
       Sheets blank? Sign in first:
-      <a href="https://3stepit.de.qlikcloud.com" target="_blank" rel="noopener">open Qlik Cloud ↗</a>
+      <a id="auth-link" href="https://3stepit.de.qlikcloud.com" target="_blank" rel="noopener">open Qlik Cloud ↗</a>
       then reload this page.
     </div>
 
@@ -632,8 +679,8 @@
 
     <div class="menu-footer">
       <div>App ID</div>
-      <div style="font-family:var(--font-mono);color:var(--muted);font-size:9.5px;letter-spacing:0;margin-bottom:14px;word-break:break-all">cf8d9823-a353-46f5-9bc5-92a64ff3082c</div>
-      <a href="https://3stepit.de.qlikcloud.com/sense/app/cf8d9823-a353-46f5-9bc5-92a64ff3082c" target="_blank" rel="noopener">Open full app ↗</a>
+      <div id="footer-appid" style="font-family:var(--font-mono);color:var(--muted);font-size:9.5px;letter-spacing:0;margin-bottom:14px;word-break:break-all"></div>
+      <a id="footer-app-link" href="#" target="_blank" rel="noopener">Open full app ↗</a>
     </div>
   </aside>
 
@@ -676,6 +723,12 @@
     
     const { CONFIG, SHEETS, GLOBAL_SELECTIONS } = window;
 
+    // Sidebar links reflect CONFIG, including any URL overrides.
+    document.getElementById("auth-link").href = "https://" + CONFIG.host;
+    document.getElementById("footer-appid").textContent = CONFIG.appid;
+    document.getElementById("footer-app-link").href =
+      "https://" + CONFIG.host + "/sense/app/" + encodeURIComponent(CONFIG.appid);
+
     // Build a Single Integration API URL for one sheet.
     // Format reference:
     //   https://help.qlik.com/en-US/cloud-services/Subsystems/Hub/Content/Sense_Hub/Embed/embed-sheet-app.htm
@@ -687,10 +740,10 @@
     function buildSheetUrl(sheet) {
       const simpleHash = data => JSON.stringify(data).split('').reduce((h, c) => ((h << 5) - h) + c.charCodeAt(0) | 0, 0);
       const parts = [];
-      parts.push("theme=" + encodeURIComponent(CONFIG.THEME));
-      parts.push("appid=" + encodeURIComponent(CONFIG.APP_ID));
+      parts.push("theme=" + encodeURIComponent(CONFIG.theme));
+      parts.push("appid=" + encodeURIComponent(CONFIG.appid));
       parts.push("sheet=" + encodeURIComponent(sheet.id));
-      parts.push("opt="   + encodeURIComponent(sheet.opt || CONFIG.defaultOpt));
+      parts.push("opt="   + encodeURIComponent(sheet.opt || CONFIG.opt));
 
       const selections = [
         ...GLOBAL_SELECTIONS,
@@ -705,8 +758,8 @@
         parts.push("select=" + field + "," + values);
       });
 
-      console.log("https://" + CONFIG.HOST + "/single/?" + parts.join("&"));
-      return "https://" + CONFIG.HOST + "/single/?" + parts.join("&");
+      console.log("https://" + CONFIG.host + "/single/?" + parts.join("&"));
+      return "https://" + CONFIG.host + "/single/?" + parts.join("&");
     }
 
     // Render menu + sheet sections from the config array.

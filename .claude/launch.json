@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "https-dev-server",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["https_server.py"],
+      "port": 8443
+    }
+  ]
+}
