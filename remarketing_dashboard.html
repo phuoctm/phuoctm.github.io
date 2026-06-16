@@ -638,8 +638,8 @@
 
     /* Sheet section */
     section.sheet {
-      padding: 56px 0 56px;
-      border-bottom: 1px solid var(--border);
+      padding: 0px 0 56px;
+      border-bottom: 0px solid var(--border);
       scroll-margin-top: 20px;
     }
     section.sheet:last-of-type { border-bottom: none; }
@@ -1013,7 +1013,7 @@
       const idx = String(i + 1).padStart(2, "0");
       const anchor = "sheet-" + i;
       const url = buildSheetUrl(sheet);
-      const height = sheet.height || "88vh";
+      const height = sheet.height || "84vh";
 
       // Menu entry
       const li = document.createElement("li");
