@@ -1,0 +1,1156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Automating Qlik Cloud with Claude Code — Workshop</title>
+
+<!-- === FONTS: Unbounded (headings) + Poppins (body) + JetBrains Mono (prompts) === -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;700;800&family=Poppins:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+/* ===========================================
+   GOODIN ACADEMY — THEME TOKENS
+   Change these to retune the whole deck.
+   =========================================== */
+:root {
+  --ink:        #2E2E2E;   /* primary slide background           */
+  --ink-deep:   #1C1C1C;   /* hero / title gradient base         */
+  --periwinkle: #8A9DFF;   /* primary accent · kickers · logo    */
+  --mint:       #85F997;   /* action accent · ONE highlight/slide*/
+  --white:      #FFFFFF;
+  --muted:      rgba(255,255,255,.72);
+  --faint:      rgba(255,255,255,.45);
+  --hair:       rgba(255,255,255,.10);
+  --surface:    #E1E1E1;
+  --red:        #FF6B6B;   /* warm error tone for severity cues  */
+  --amber:      #FFC773;
+
+  --font-head: "Unbounded", "Helvetica Neue", Arial, sans-serif;
+  --font-body: "Poppins", "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "Courier New", monospace;
+
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --stage-bg: #000;
+
+  /* GOODIN wordmark, embedded once, reused everywhere via background-image */
+  --logo: url('data:image/png;base64,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');
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+/* === PASTE: viewport-base.css (fixed 16:9 stage) === */
+html, body {
+  width: 100%; height: 100%; margin: 0; overflow: hidden;
+  background: var(--stage-bg, #000);
+}
+.deck-viewport { position: fixed; inset: 0; overflow: hidden; background: var(--stage-bg, #000); }
+.deck-stage {
+  position: absolute; left: 0; top: 0; width: 1920px; height: 1080px;
+  overflow: hidden; transform-origin: 0 0; background: var(--slide-bg, #fff);
+}
+.slide {
+  position: absolute; inset: 0; width: 1920px; height: 1080px; overflow: hidden;
+  display: block; visibility: hidden; opacity: 0; pointer-events: none;
+  background: var(--slide-bg, #fff);
+}
+.slide.active, .slide.visible { visibility: visible; opacity: 1; pointer-events: auto; z-index: 1; }
+img, video, canvas, svg { max-width: 100%; max-height: 100%; }
+.deck-controls { position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%); z-index: 1000; }
+@media print {
+  html, body { width: 1920px; height: auto; overflow: visible; background: #fff; }
+  .deck-viewport { position: static; overflow: visible; background: #fff; }
+  .deck-stage { position: static; width: auto; height: auto; transform: none !important; background: none; }
+  .slide {
+    position: relative; display: block !important; visibility: visible !important;
+    opacity: 1 !important; pointer-events: auto !important; width: 1920px; height: 1080px;
+    break-after: page; page-break-after: always;
+  }
+  .slide:last-child { break-after: auto; page-break-after: auto; }
+  .deck-controls { display: none !important; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.2s !important; }
+}
+
+/* ===========================================
+   BACKGROUNDS — flat ink + signature aurora
+   =========================================== */
+.deck-stage { --slide-bg: var(--ink); }
+.slide { background: var(--ink); color: var(--white); font-family: var(--font-body); }
+
+/* Aurora used behind title / section / closing slides */
+.aurora {
+  background:
+    radial-gradient(60% 50% at 22% 38%, rgba(133,249,151,.16), transparent 70%),
+    radial-gradient(55% 48% at 78% 58%, rgba(138,157,255,.22), transparent 70%),
+    linear-gradient(180deg, #1C1C1C, #2E2E2E);
+}
+/* faint aurora behind dense content slides — keeps text crisp */
+.aurora-faint {
+  background:
+    radial-gradient(50% 45% at 88% 12%, rgba(138,157,255,.10), transparent 72%),
+    radial-gradient(45% 40% at 6% 96%, rgba(133,249,151,.06), transparent 72%),
+    var(--ink);
+}
+/* slow drifting soft blob for depth on hero slides */
+.blob {
+  position: absolute; width: 760px; height: 760px; border-radius: 50%;
+  filter: blur(90px); opacity: .5; pointer-events: none; z-index: 0;
+  background: radial-gradient(circle, rgba(138,157,255,.40), transparent 65%);
+  animation: drift 22s ease-in-out infinite alternate;
+}
+@keyframes drift { from { transform: translate(-60px,-40px) scale(1); } to { transform: translate(80px,60px) scale(1.12); } }
+
+/* ===========================================
+   BRAND CHROME — logo + page number
+   =========================================== */
+.brand-logo {
+  position: absolute; top: 56px; left: 96px;
+  width: 246px; height: 44px;
+  background: var(--logo) no-repeat left center / contain;
+  z-index: 5;
+}
+.title-logo {
+  position: static; margin: 0 auto 44px; width: 358px; height: 64px;
+  background: var(--logo) no-repeat center / contain;
+}
+.pagenum {
+  position: absolute; top: 62px; right: 96px; z-index: 5;
+  font-family: var(--font-mono); font-size: 22px; color: var(--faint);
+  letter-spacing: .06em;
+}
+
+/* ===========================================
+   LAYOUT — content slide wrapper
+   =========================================== */
+.wrap {
+  position: absolute; inset: 0;
+  padding: 168px 96px 88px;
+  display: flex; flex-direction: column;
+  z-index: 2;
+}
+.center { justify-content: center; align-items: center; text-align: center; padding: 96px; }
+
+/* Header block (kicker + heading + hairline) */
+.kicker {
+  font-family: var(--font-body); font-weight: 600; font-size: 22px;
+  text-transform: uppercase; letter-spacing: .14em; color: var(--periwinkle);
+  margin-bottom: 14px;
+}
+.heading {
+  font-family: var(--font-head); font-weight: 700; font-size: 66px;
+  line-height: 1.06; color: var(--white); letter-spacing: -.01em;
+}
+.s-head { margin-bottom: 44px; }
+.s-head .rule {
+  height: 1px; background: var(--hair); margin-top: 26px; width: 100%;
+}
+
+/* Highlights */
+.hl   { color: var(--mint); }
+.peri { color: var(--periwinkle); }
+strong, b { color: var(--white); font-weight: 600; }
+
+/* ===========================================
+   COMPONENTS
+   =========================================== */
+/* Prompt card — the heart of this workshop (a thing you paste to Claude) */
+.prompt {
+  position: relative; background: rgba(138,157,255,.07);
+  border: 1px solid var(--hair); border-left: 4px solid var(--periwinkle);
+  border-radius: 14px; padding: 26px 32px;
+}
+.prompt-tag {
+  font-family: var(--font-body); font-weight: 600; font-size: 17px;
+  text-transform: uppercase; letter-spacing: .16em; color: var(--periwinkle);
+  margin-bottom: 14px; display: flex; align-items: center; gap: 10px;
+}
+.prompt pre {
+  font-family: var(--font-mono); font-weight: 400; font-size: 26px; line-height: 1.55;
+  color: var(--white); white-space: pre-wrap; word-break: break-word; margin: 0;
+}
+.prompt.sm pre { font-size: 23px; line-height: 1.5; }
+/* Copy button — injected by JS into the top-right of every prompt box */
+.copy-btn {
+  position: absolute; top: 14px; right: 14px; z-index: 4;
+  display: inline-flex; align-items: center; gap: 8px;
+  font-family: var(--font-body); font-weight: 600; font-size: 16px; letter-spacing: .04em;
+  color: var(--periwinkle); background: rgba(138,157,255,.10);
+  border: 1px solid var(--hair); border-radius: 999px; padding: 8px 14px 8px 12px;
+  cursor: pointer; transition: all .2s var(--ease);
+}
+.copy-btn:hover { background: rgba(138,157,255,.20); border-color: var(--periwinkle); }
+.copy-btn svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 2; }
+.copy-btn .lbl-txt { line-height: 1; }
+.copy-btn.copied { color: var(--ink); background: var(--mint); border-color: var(--mint); }
+
+/* Config / values block (a file you edit) */
+.codeblock {
+  background: rgba(255,255,255,.04); border: 1px solid var(--hair);
+  border-radius: 14px; padding: 24px 30px;
+}
+.codeblock pre {
+  font-family: var(--font-mono); font-size: 24px; line-height: 1.6; color: var(--muted); margin: 0;
+}
+.codeblock .k { color: var(--periwinkle); }
+
+/* Note line: small periwinkle label + body text */
+.note { font-size: 30px; line-height: 1.5; color: var(--muted); }
+.note .lbl {
+  display: inline-block; font-weight: 600; color: var(--periwinkle);
+  text-transform: uppercase; letter-spacing: .08em; font-size: 19px;
+  margin-right: 12px;
+}
+
+/* Lead paragraph */
+.lead { font-size: 38px; line-height: 1.45; color: var(--white); font-weight: 400; }
+.body { font-size: 30px; line-height: 1.55; color: var(--muted); }
+
+/* Bullet list with icons */
+.blist { list-style: none; display: flex; flex-direction: column; gap: 22px; }
+.blist li {
+  font-size: 30px; line-height: 1.45; color: var(--muted);
+  display: flex; gap: 18px; align-items: flex-start;
+}
+.blist .ic { flex: 0 0 auto; font-size: 32px; line-height: 1.25; }
+
+/* Numbered steps */
+.steps { list-style: none; counter-reset: s; display: flex; flex-direction: column; gap: 22px; }
+.steps li {
+  display: flex; gap: 24px; align-items: flex-start;
+  font-size: 30px; line-height: 1.45; color: var(--muted);
+}
+.steps li::before {
+  counter-increment: s; content: counter(s);
+  flex: 0 0 auto; width: 50px; height: 50px; border-radius: 50%;
+  border: 1.5px solid var(--periwinkle); color: var(--periwinkle);
+  font-family: var(--font-head); font-weight: 700; font-size: 24px;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* Card grid */
+.grid { display: grid; gap: 28px; }
+.grid-2 { grid-template-columns: 1fr 1fr; }
+.grid-3 { grid-template-columns: repeat(3,1fr); }
+.card {
+  background: rgba(255,255,255,.03); border: 1px solid var(--hair);
+  border-radius: 20px; padding: 38px 40px;
+}
+.card .ic { font-size: 42px; display: block; margin-bottom: 18px; }
+.card h3 { font-family: var(--font-head); color: var(--white); font-size: 32px; line-height: 1.15; margin-bottom: 12px; }
+.card p { color: var(--muted); font-size: 26px; line-height: 1.5; }
+
+/* Two-column split */
+.cols { display: grid; grid-template-columns: 1fr 1fr; gap: 56px; align-items: start; }
+.cols.hair > :first-child { border-right: 1px solid var(--hair); padding-right: 56px; }
+
+/* Callout / warning */
+.callout {
+  background: rgba(255,107,107,.07); border: 1px solid rgba(255,107,107,.30);
+  border-left: 4px solid var(--red); border-radius: 14px; padding: 28px 32px;
+  font-size: 28px; line-height: 1.5; color: var(--muted);
+}
+.callout .ic { font-size: 32px; }
+.tip {
+  background: rgba(138,157,255,.07); border: 1px solid var(--hair);
+  border-left: 4px solid var(--periwinkle); border-radius: 14px;
+  padding: 22px 28px; font-size: 26px; line-height: 1.5; color: var(--muted);
+}
+.quote {
+  font-family: var(--font-head); font-weight: 600; font-size: 38px; line-height: 1.3;
+  color: var(--periwinkle); border-left: 4px solid var(--periwinkle);
+  padding-left: 28px;
+}
+
+/* Severity rows */
+.sev { list-style: none; display: flex; flex-direction: column; gap: 20px; }
+.sev li { display: flex; gap: 20px; align-items: flex-start; font-size: 30px; line-height: 1.4; color: var(--muted); }
+.sev .ic { font-size: 30px; flex: 0 0 auto; }
+
+/* Agenda table */
+.agenda { width: 100%; border-collapse: collapse; }
+.agenda td { padding: 16px 22px; border-bottom: 1px solid var(--hair); font-size: 28px; vertical-align: middle; }
+.agenda tr:last-child td { border-bottom: none; }
+.agenda .t { color: var(--periwinkle); font-family: var(--font-mono); font-size: 25px; width: 150px; white-space: nowrap; }
+.agenda .p { color: var(--white); font-weight: 400; }
+.agenda tr.brk .p { color: var(--mint); font-weight: 600; }
+.agenda tr.brk .t { color: var(--mint); }
+
+/* ===========================================
+   TITLE & SECTION DIVIDER SLIDES
+   =========================================== */
+.title-slide { text-align: center; }
+.title-slide .kicker { letter-spacing: .2em; }
+.title-h1 {
+  font-family: var(--font-head); font-weight: 700; font-size: 92px; line-height: 1.04;
+  color: var(--white); letter-spacing: -.015em; max-width: 1480px; margin: 0 auto;
+}
+.title-sub { font-size: 36px; color: var(--muted); line-height: 1.5; max-width: 1180px; margin: 36px auto 0; }
+.title-note { font-size: 28px; color: var(--faint); margin-top: 20px; }
+.dotcluster { margin: 0 auto 30px; }
+
+.divider .idx {
+  font-family: var(--font-head); font-weight: 800; font-size: 150px;
+  color: var(--periwinkle); line-height: 1; opacity: .9;
+}
+.divider .part-kicker {
+  font-family: var(--font-body); font-weight: 600; font-size: 24px;
+  text-transform: uppercase; letter-spacing: .2em; color: var(--faint); margin-bottom: 18px;
+}
+.divider .title {
+  font-family: var(--font-head); font-weight: 700; font-size: 84px; line-height: 1.08;
+  color: var(--white); max-width: 1400px; margin-top: 10px; letter-spacing: -.01em;
+}
+
+/* Closing */
+.closing .big {
+  font-family: var(--font-head); font-weight: 700; font-size: 76px; line-height: 1.12;
+  color: var(--white); max-width: 1400px; margin: 0 auto;
+}
+.btn {
+  display: inline-block; font-family: var(--font-body); font-weight: 700; font-size: 28px;
+  padding: 18px 48px; border-radius: 999px; border: 2px solid transparent;
+  background: var(--mint); color: var(--ink); margin-top: 8px;
+}
+.reslist { list-style: none; display: flex; flex-direction: column; gap: 16px; font-size: 28px; color: var(--muted); }
+.reslist .ic { margin-right: 14px; }
+.reslist .peri { font-family: var(--font-mono); font-size: 25px; }
+
+/* ===========================================
+   ENTRANCE ANIMATIONS — one orchestrated load
+   =========================================== */
+.reveal { opacity: 0; transform: translateY(28px); transition: opacity .6s var(--ease), transform .6s var(--ease); }
+.slide.visible .reveal { opacity: 1; transform: translateY(0); }
+.slide.visible .reveal:nth-child(1) { transition-delay: .08s; }
+.slide.visible .reveal:nth-child(2) { transition-delay: .18s; }
+.slide.visible .reveal:nth-child(3) { transition-delay: .28s; }
+.slide.visible .reveal:nth-child(4) { transition-delay: .38s; }
+.slide.visible .reveal:nth-child(5) { transition-delay: .48s; }
+.slide.visible .reveal:nth-child(6) { transition-delay: .58s; }
+.slide.visible .reveal:nth-child(7) { transition-delay: .68s; }
+.slide.visible .reveal:nth-child(8) { transition-delay: .78s; }
+/* stagger grid/list items too */
+.slide.visible .stagger > * { opacity: 0; transform: translateY(22px); animation: rise .55s var(--ease) forwards; }
+.slide.visible .stagger > *:nth-child(1) { animation-delay: .30s; }
+.slide.visible .stagger > *:nth-child(2) { animation-delay: .42s; }
+.slide.visible .stagger > *:nth-child(3) { animation-delay: .54s; }
+.slide.visible .stagger > *:nth-child(4) { animation-delay: .66s; }
+.slide.visible .stagger > *:nth-child(5) { animation-delay: .78s; }
+.slide.visible .stagger > *:nth-child(6) { animation-delay: .90s; }
+.slide.visible .stagger > *:nth-child(7) { animation-delay: 1.02s; }
+.slide.visible .stagger > *:nth-child(8) { animation-delay: 1.14s; }
+@keyframes rise { to { opacity: 1; transform: translateY(0); } }
+
+/* ===========================================
+   PROGRESS DOTS (deck chrome, outside stage)
+   =========================================== */
+.progress { position: fixed; bottom: 26px; left: 50%; transform: translateX(-50%); z-index: 1000; display: flex; gap: 9px; }
+.progress .pd { width: 8px; height: 8px; border-radius: 50%; background: var(--hair); transition: all .3s var(--ease); }
+.progress .pd.on { background: var(--mint); width: 24px; border-radius: 5px; }
+
+/* Inline edit toggle */
+.edit-hotzone { position: fixed; top: 0; left: 0; width: 80px; height: 80px; z-index: 10000; cursor: pointer; }
+.edit-toggle {
+  position: fixed; top: 18px; left: 18px; z-index: 10001;
+  width: 52px; height: 52px; border-radius: 50%; border: 1px solid var(--hair);
+  background: rgba(0,0,0,.55); color: var(--white); font-size: 22px; cursor: pointer;
+  opacity: 0; pointer-events: none; transition: opacity .3s ease;
+}
+.edit-toggle.show, .edit-toggle.active { opacity: 1; pointer-events: auto; }
+.edit-toggle.active { background: var(--mint); color: var(--ink); border-color: var(--mint); }
+[contenteditable="true"] { outline: 2px dashed var(--periwinkle); outline-offset: 6px; border-radius: 4px; cursor: text; }
+.edit-hint {
+  position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%);
+  background: var(--mint); color: var(--ink); font-family: var(--font-body); font-weight: 600;
+  font-size: 16px; padding: 10px 22px; border-radius: 999px; z-index: 10002; display: none;
+}
+.edit-hint.show { display: block; }
+</style>
+</head>
+<body>
+<div class="deck-viewport">
+  <main class="deck-stage" id="deckStage">
+
+    <!-- ============ 1 · TITLE ============ -->
+    <section class="slide title-slide active aurora">
+      <span class="blob" style="top:-160px;left:-120px"></span>
+      <div class="wrap center" style="z-index:2">
+        <div class="title-logo reveal"></div>
+        <p class="kicker reveal">Hands-on workshop · ~2 hours</p>
+        <h1 class="title-h1 reveal">Automating Qlik Cloud with <span class="peri">Claude&nbsp;Code</span></h1>
+        <p class="title-sub reveal">Build a real Qlik automation toolkit <strong>by conversation</strong> — no prior coding required.</p>
+        <p class="title-sub reveal" style="margin-top:18px">You'll leave with a working toolkit <span class="hl">+ two reusable skills</span>, all in your own Git repo.</p>
+      </div>
+    </section>
+
+    <!-- ============ 2 · WHAT YOU'LL BUILD ============ -->
+    <section class="slide aurora-faint">
+      <div class="brand-logo"></div><div class="pagenum">02 / 28</div>
+      <div class="wrap">
+        <div class="s-head">
+          <p class="kicker reveal">The outcome</p>
+          <h2 class="heading reveal">What you'll build today</h2>
+        </div>
+        <div class="grid grid-2 stagger" style="margin-bottom:36px">
+          <div class="card"><span class="ic">🔌</span><h3>A Qlik REST API toolkit</h3><p>Point it at any tenant by editing one file.</p></div>
+          <div class="card"><span class="ic">🪪</span><h3>A "reload watchdog" skill</h3><p>Every morning it flags failed / auto-disabled / missed reloads and big app-size changes — and drafts you an email.</p></div>
+          <div class="card"><span class="ic">🔍</span><h3>A "load-script debugger" skill</h3><p>Diagnose a failed reload, compare two runs, or get performance tips.</p></div>
+          <div class="card"><span class="ic">📦</span><h3>Your own Git repo</h3><p>Reusable and shareable with teammates.</p></div>
+        </div>
+        <p class="body reveal">All built by <span class="hl">describing what you want</span> — Claude writes and runs the code.</p>
+      </div>
+    </section>
+
+    <!-- ============ 3 · AGENDA ============ -->
+    <section class="slide aurora-faint">
+      <div class="brand-logo"></div><div class="pagenum">03 / 28</div>
+      <div class="wrap">
+        <div class="s-head">
+          <p class="kicker reveal">Two hours, four parts</p>
+          <h2 class="heading reveal">Agenda</h2>
+        </div>
+        <table class="agenda reveal">
+          <tr><td class="t">0:00</td><td class="p">Welcome &amp; what you'll build</td></tr>
+          <tr><td class="t">0:10</td><td class="p">How Claude Code works (you've only used Claude chat so far)</td></tr>
+          <tr><td class="t">0:20</td><td class="p">Prerequisites &amp; setup (install via prompts)</td></tr>
+          <tr><td class="t">0:40</td><td class="p">Part 1 — Scaffold the project &amp; connect to Qlik</td></tr>
+          <tr><td class="t">0:55</td><td class="p">Part 2 — Build &amp; run the reload watchdog</td></tr>
+          <tr class="brk"><td class="t">1:20</td><td class="p">☕ Break</td></tr>
+          <tr><td class="t">1:30</td><td class="p">Part 3 — Build &amp; run the script debugger</td></tr>
+          <tr><td class="t">1:55</td><td class="p">Part 4 — Save to GitHub + recap &amp; Q&amp;A</td></tr>
+        </table>
+      </div>
+    </section>
+
+    <!-- ============ 4 · WHAT IS CLAUDE CODE ============ -->
+    <section class="slide aurora-faint">
+      <div class="brand-logo"></div><div class="pagenum">04 / 28</div>
+      <div class="wrap">
+        <div class="s-head">
+          <p class="kicker reveal">Orientation</p>
+          <h2 class="heading reveal">What is Claude Code?</h2>
+        </div>
+        <div class="cols hair">
+          <div>
+            <p class="lead reveal" style="margin-bottom:34px">You've used Claude in a browser.<br><span class="hl">Claude Code is Claude in your computer.</span></p>
+            <div class="quote reveal">Think pair programmer,<br>not search box.</div>
+          </div>
+          <ul class="blist stagger">
+            <li><span class="ic">📂</span><span>It can <strong>read &amp; write files</strong> and <strong>run commands</strong> on your machine.</span></li>
+            <li><span class="ic">💬</span><span>You give it <strong>goals in plain English</strong>; it builds, runs, and explains.</span></li>
+            <li><span class="ic">🎛️</span><span>You stay <strong>in control</strong>: it asks before doing things, and you review results.</span></li>
+            <li><span class="ic">⚙️</span><span>Perfect for automation, scripts, and connecting to APIs like Qlik's.</span></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 5 · HOW A SESSION FLOWS ============ -->
+    <section class="slide aurora-faint">
+      <div class="brand-logo"></div><div class="pagenum">05 / 28</div>
+      <div class="wrap">
+        <div class="s-head">
+          <p class="kicker reveal">The rhythm</p>
+          <h2 class="heading reveal">How a session flows</h2>
+        </div>
+        <div class="cols" style="grid-template-columns:1.15fr .85fr">
+          <ol class="steps stagger">
+            <li><span><strong>You type a prompt</strong> — a goal, in plain language.</span></li>
+            <li><span><strong>Claude proposes &amp; acts</strong> — writes files, runs commands.</span></li>
+            <li><span><strong>You approve</strong> what it wants to do.</span></li>
+            <li><span><strong>It verifies</strong> the result and tells you what happened.</span></li>
+            <li><span><strong>Repeat</strong> — each prompt adds the next capability.</span></li>
+          </ol>
+          <div class="callout reveal">
+            <span class="ic">⚠️</span> <strong>Your screen won't match these slides exactly.</strong> Claude adapts to your OS, your tenant, and what it finds. If a step differs, errors, or asks a question — <strong>just answer it in plain English.</strong>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 6 · GROUND RULES ============ -->
+    <section class="slide aurora-faint">
+      <div class="brand-logo"></div><div class="pagenum">06 / 28</div>
+      <div class="wrap">
+        <div class="s-head">
+          <p class="kicker reveal">Safety</p>
+          <h2 class="heading reveal">Ground rules</h2>
+        </div>
+        <div class="grid grid-2 stagger" style="margin-bottom:34px">
+          <div class="card"><span class="ic">🔐</span><h3>Your API key stays local</h3><p>It lives in a <code>.env</code> file that is <strong>never committed</strong> — Claude sets this up for you.</p></div>
+          <div class="card"><span class="ic">✅</span><h3>Claude asks permission</h3><p>Before running commands or editing files.</p></div>
+          <div class="card"><span class="ic">👀</span><h3>You review</h3><p>Before anything is committed to GitHub or emailed.</p></div>
+          <div class="card"><span class="ic">💻</span><h3>Nothing leaves your machine</h3><p>Unless you say so.</p></div>
+        </div>
+        <p class="lead reveal">You are <span class="hl">always</span> the one who approves.</p>
+      </div>
+    </section>
+
+    <!-- ============ 7 · PREREQUISITES ============ -->
+    <section class="slide aurora-faint">
+      <div class="brand-logo"></div><div class="pagenum">07 / 28</div>
+      <div class="wrap">
+        <div class="s-head">
+          <p class="kicker reveal">Before we start</p>
+          <h2 class="heading reveal">Prerequisites — checklist</h2>
+        </div>
+        <ul class="blist stagger" style="margin-bottom:34px">
+          <li><span class="ic">💻</span><span>A laptop (Windows or Mac)</span></li>
+          <li><span class="ic">🤖</span><span><strong>Claude Code</strong> installed, signed in with your Claude account</span></li>
+          <li><span class="ic">🟢</span><span>A <strong>Qlik Cloud</strong> account that can create an <strong>API key</strong></span></li>
+          <li><span class="ic">🌐</span><span>Internet access</span></li>
+          <li><span class="ic">🛠️</span><span><strong>Git</strong> and <strong>Node.js</strong> — <em>we'll install these via Claude in the next slides</em></span></li>
+        </ul>
+        <p class="body reveal">The only things you set up by hand are <strong>Claude Code</strong> and your <strong>Qlik API key</strong>. <span class="hl">Claude handles the rest.</span></p>
+      </div>
+    </section>
+
+    <!-- ============ 8 · PREREQ A ============ -->
+    <section class="slide aurora-faint">
+      <div class="brand-logo"></div><div class="pagenum">08 / 28</div>
+      <div class="wrap">
+        <div class="s-head">
+          <p class="kicker reveal">Prereq A</p>
+          <h2 class="heading reveal">Install Claude Code</h2>
+        </div>
+        <ul class="blist stagger">
+          <li><span class="ic">⬇️</span><span>Easiest path: install the <strong>Claude Code desktop app</strong> (Windows / Mac) and <strong>sign in</strong> with your Claude account.</span></li>
+          <li><span class="ic">📁</span><span>Open (or create) the <strong>folder</strong> where your project will live, and start a chat there.</span></li>
+          <li><span class="ic">✨</span><span>That's it — <span class="hl">no developer tools needed yet</span>; Claude will install those next.</span></li>
+        </ul>
+        <!-- Presenter: walk the room here; make sure everyone is signed in and has an empty project folder open before moving on. -->
+      </div>
+    </section>
+
+    <!-- ============ 9 · PREREQ B ============ -->
+    <section class="slide aurora-faint">
+      <div class="brand-logo"></div><div class="pagenum">09 / 28</div>
+      <div class="wrap">
+        <div class="s-head">
+          <p class="kicker reveal">Prereq B</p>
+          <h2 class="heading reveal">Let Claude install Git &amp; Node.js</h2>
+        </div>
+        <p class="body reveal" style="margin-bottom:22px">Paste this as your <strong>first prompt</strong>:</p>
+        <div class="prompt reveal" style="margin-bottom:34px">
+          <div class="prompt-tag">▸ Prompt</div>
+          <pre>I've never used Claude Code. Check whether Git and Node.js (v20+)
+are installed on this computer. Install whatever is missing, then
+tell me if I need to restart my terminal.</pre>
+        </div>
+        <ul class="blist stagger">
+          <li><span class="ic">🧭</span><span>Claude detects your operating system and installs the right way.</span></li>
+          <li><span class="ic">🔄</span><span><strong>Reopen the terminal</strong> when it tells you to (so the new tools are picked up).</span></li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ============ 10 · PREREQ C ============ -->
+    <section class="slide aurora-faint">
+      <div class="brand-logo"></div><div class="pagenum">10 / 28</div>
+      <div class="wrap">
+        <div class="s-head">
+          <p class="kicker reveal">Prereq C</p>
+          <h2 class="heading reveal">Get your Qlik API key</h2>
+        </div>
+        <ol class="steps stagger" style="margin-bottom:30px">
+          <li><span>Click your <strong>avatar</strong> (top-right) → <strong>Profile settings</strong>.</span></li>
+          <li><span><strong>API keys</strong> → <strong>Generate new key</strong> → <span class="hl">copy it now</span> (shown only once).</span></li>
+          <li><span>Note your <strong>tenant hostname</strong> from the URL, e.g. <code>your-tenant.eu.qlikcloud.com</code>.</span></li>
+        </ol>
+        <div class="tip reveal">💡 <strong>Don't see "API keys"?</strong> A Qlik <strong>admin</strong> needs to enable them for your tenant.</div>
+      </div>
+    </section>
+
+    <!-- ============ 11 · PART 1 DIVIDER ============ -->
+    <section class="slide divider aurora">
+      <span class="blob" style="bottom:-200px;right:-120px;background:radial-gradient(circle,rgba(133,249,151,.32),transparent 65%)"></span>
+      <div class="wrap" style="justify-content:center;z-index:2">
+        <div class="idx reveal">01</div>
+        <p class="part-kicker reveal" style="margin-top:18px">Part 1</p>
+        <h2 class="title reveal">Scaffold the project &amp; connect to Qlik</h2>
+      </div>
+    </section>
+
+    <!-- ============ 12 · STEP 1 ============ -->
+    <section class="slide aurora-faint">
+      <div class="brand-logo"></div><div class="pagenum">12 / 28</div>
+      <div class="wrap">
+        <div class="s-head">
+          <p class="kicker reveal">Step 1</p>
+          <h2 class="heading reveal">Create the project</h2>
+        </div>
+        <div class="prompt reveal" style="margin-bottom:30px">
+          <div class="prompt-tag">▸ Prompt</div>
+          <pre>Create a new project in this empty folder with runnable examples for
+automating Qlik Cloud through its REST API. I want it easy to point at
+different tenants and quick to develop. Use API-key authentication, and
+tell me exactly which file to put my key in.</pre>
+        </div>
+        <p class="note reveal" style="margin-bottom:16px"><span class="lbl">What Claude does</span>Recommends <strong>Node.js + the official <code>@qlik/api</code> SDK</strong>, scaffolds the project (examples, README, config), installs dependencies.</p>
+        <p class="note reveal"><span class="lbl">Result</span>Your key goes in a file called <span class="hl">.env</span>.</p>
+      </div>
+    </section>
+
+    <!-- ============ 13 · STEP 2 ============ -->
+    <section class="slide aurora-faint">
+      <div class="brand-logo"></div><div class="pagenum">13 / 28</div>
+      <div class="wrap">
+        <div class="s-head">
+          <p class="kicker reveal">Step 2</p>
+          <h2 class="heading reveal">Add your key &amp; connect</h2>
+        </div>
+        <div class="cols" style="gap:48px">
+          <div>
+            <p class="note reveal" style="margin-bottom:18px"><span class="lbl">Do</span>Copy <code>.env.example</code> to <code>.env</code>, then paste your two values:</p>
+            <div class="codeblock reveal">
+              <pre><span class="k">QLIK_HOST</span>=your-tenant.eu.qlikcloud.com
+<span class="k">QLIK_API_KEY</span>=&lt;the key you copied&gt;</pre>
+            </div>
+          </div>
+          <div>
+            <p class="note reveal" style="margin-bottom:18px"><span class="lbl">Then prompt</span></p>
+            <div class="prompt sm reveal" style="margin-bottom:24px">
+              <div class="prompt-tag">▸ Prompt</div>
+              <pre>I copied .env.example to .env and pasted my tenant
+host and API key. Run a quick test to confirm it connects.</pre>
+            </div>
+            <p class="note reveal"><span class="lbl">Expect</span><span class="hl">✅ Connected as &lt;your name&gt;</span>. Switching tenants later = just edit <code>.env</code>.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 14 · CONCEPT: SKILLS ============ -->
+    <section class="slide aurora-faint">
+      <div class="brand-logo"></div><div class="pagenum">14 / 28</div>
+      <div class="wrap">
+        <div class="s-head">
+          <p class="kicker reveal">Concept</p>
+          <h2 class="heading reveal">"Skills"</h2>
+        </div>
+        <p class="lead reveal" style="margin-bottom:40px">A <strong>skill</strong> is a reusable capability you teach Claude once, then run on demand — and can schedule.</p>
+        <div class="grid grid-2 stagger" style="margin-bottom:36px">
+          <div class="card"><span class="ic">🪪</span><h3>Reload watchdog</h3><p>Your morning health check.</p></div>
+          <div class="card"><span class="ic">🔍</span><h3>Script debugger</h3><p>Your reload troubleshooter.</p></div>
+        </div>
+        <p class="body reveal">Built once → <span class="hl">reused forever</span>, by you or your teammates.</p>
+      </div>
+    </section>
+
+    <!-- ============ 15 · PART 2 DIVIDER ============ -->
+    <section class="slide divider aurora">
+      <span class="blob" style="top:-180px;right:-100px"></span>
+      <div class="wrap" style="justify-content:center;z-index:2">
+        <div class="idx reveal">02</div>
+        <p class="part-kicker reveal" style="margin-top:18px">Part 2</p>
+        <h2 class="title reveal">The morning reload watchdog</h2>
+      </div>
+    </section>
+
+    <!-- ============ 16 · STEP 3 ============ -->
+    <section class="slide aurora-faint">
+      <div class="brand-logo"></div><div class="pagenum">16 / 28</div>
+      <div class="wrap">
+        <div class="s-head">
+          <p class="kicker reveal">Step 3</p>
+          <h2 class="heading reveal">Build the watchdog</h2>
+        </div>
+        <div class="prompt reveal" style="margin-bottom:30px">
+          <div class="prompt-tag">▸ Prompt</div>
+          <pre>Create a skill I can run every morning that checks my scheduled reloads
+since it last ran and flags anything off — failed reloads, tasks Qlik
+auto-disabled after repeated failures, big jumps or drops in app size,
+and reloads that didn't run when they should. Keep the report to current
+issues only, and draft me an email summary.</pre>
+        </div>
+        <p class="note reveal"><span class="lbl">What Claude does</span>Builds the skill, keeps a small <strong>local history</strong> so it can compare day-to-day, and runs once to set a <span class="hl">baseline</span>.</p>
+      </div>
+    </section>
+
+    <!-- ============ 17 · STEP 4 ============ -->
+    <section class="slide aurora-faint">
+      <div class="brand-logo"></div><div class="pagenum">17 / 28</div>
+      <div class="wrap">
+        <div class="s-head">
+          <p class="kicker reveal">Step 4</p>
+          <h2 class="heading reveal">Run the watchdog</h2>
+        </div>
+        <div class="cols" style="gap:48px;grid-template-columns:.9fr 1.1fr">
+          <div>
+            <div class="prompt sm reveal" style="margin-bottom:26px">
+              <div class="prompt-tag">▸ Prompt</div>
+              <pre>Run the reload watchdog.</pre>
+            </div>
+            <p class="body reveal">…plus an <strong>email draft</strong> in your inbox to review and send. It shows <span class="hl">current issues only</span> — no pile-up of old noise.</p>
+          </div>
+          <div>
+            <p class="note reveal" style="margin-bottom:20px"><span class="lbl">Expect</span>a short, <strong>prioritized</strong> report —</p>
+            <ul class="sev stagger">
+              <li><span class="ic">🔴</span><span><strong>High</strong> — e.g. a task auto-disabled after failures</span></li>
+              <li><span class="ic">🟠</span><span><strong>Medium</strong> — e.g. a reload that didn't run</span></li>
+              <li><span class="ic">✅</span><span>Everything else healthy</span></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 18 · SCHEDULE IT ============ -->
+    <section class="slide aurora-faint">
+      <div class="brand-logo"></div><div class="pagenum">18 / 28</div>
+      <div class="wrap">
+        <div class="s-head">
+          <p class="kicker reveal">Optional</p>
+          <h2 class="heading reveal">Schedule it</h2>
+        </div>
+        <div class="prompt reveal" style="margin-bottom:34px">
+          <div class="prompt-tag">▸ Prompt</div>
+          <pre>Schedule the reload watchdog to run every weekday at 7am
+and email me the summary.</pre>
+        </div>
+        <ul class="blist stagger">
+          <li><span class="ic">🗓️</span><span>The exact mechanism depends on your environment (a scheduler on your machine, or a cloud routine).</span></li>
+          <li><span class="ic">🤝</span><span>Claude will <strong>explain the options</strong> and set up the one that fits you.</span></li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ============ 19 · PART 3 DIVIDER ============ -->
+    <section class="slide divider aurora">
+      <span class="blob" style="bottom:-200px;left:-120px;background:radial-gradient(circle,rgba(133,249,151,.30),transparent 65%)"></span>
+      <div class="wrap" style="justify-content:center;z-index:2">
+        <div class="idx reveal">03</div>
+        <p class="part-kicker reveal" style="margin-top:18px">Part 3</p>
+        <h2 class="title reveal">The load-script debugger</h2>
+      </div>
+    </section>
+
+    <!-- ============ 20 · STEP 5 ============ -->
+    <section class="slide aurora-faint">
+      <div class="brand-logo"></div><div class="pagenum">20 / 28</div>
+      <div class="wrap">
+        <div class="s-head">
+          <p class="kicker reveal">Step 5</p>
+          <h2 class="heading reveal">Build the debugger</h2>
+        </div>
+        <div class="prompt reveal" style="margin-bottom:30px">
+          <div class="prompt-tag">▸ Prompt</div>
+          <pre>Create a skill to debug a Qlik load script. I give it an app ID; pull
+that app's reload log. If the last reload failed, tell me when it ran,
+how long it took, the likely cause, and the exact failing command. If it
+succeeded, compare it with the previous successful run — rows and time
+per table. Add an option to only analyze the latest run for performance.</pre>
+        </div>
+        <p class="note reveal"><span class="lbl">Result</span>One skill with <span class="hl">three modes</span> — diagnose a failure, compare runs, or performance review.</p>
+      </div>
+    </section>
+
+    <!-- ============ 21 · STEP 6 ============ -->
+    <section class="slide aurora-faint">
+      <div class="brand-logo"></div><div class="pagenum">21 / 28</div>
+      <div class="wrap">
+        <div class="s-head">
+          <p class="kicker reveal">Step 6</p>
+          <h2 class="heading reveal">Use it</h2>
+        </div>
+        <p class="body reveal" style="margin-bottom:26px">Find an <strong>app ID</strong> (copy it from the Qlik app's URL, or ask Claude to list your apps).</p>
+        <div class="cols" style="gap:44px">
+          <div>
+            <p class="note reveal" style="margin-bottom:16px"><span class="lbl">To debug a reload</span></p>
+            <div class="prompt sm reveal" style="margin-bottom:18px">
+              <div class="prompt-tag">▸ Prompt</div>
+              <pre>Debug the reload for app &lt;paste-app-id&gt;.</pre>
+            </div>
+            <p class="body reveal">→ when it ran, how long, <strong>likely cause</strong>, the <strong>exact failing command</strong>, log link.</p>
+          </div>
+          <div>
+            <p class="note reveal" style="margin-bottom:16px"><span class="lbl">For performance ideas only</span></p>
+            <div class="prompt sm reveal" style="margin-bottom:18px">
+              <div class="prompt-tag">▸ Prompt</div>
+              <pre>Only analyze the latest reload of app
+&lt;paste-app-id&gt; for performance.</pre>
+            </div>
+            <p class="body reveal">→ slowest steps + tips (e.g. <span class="hl">push joins/filters to the source database</span>).</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 22 · PART 4 DIVIDER ============ -->
+    <section class="slide divider aurora">
+      <span class="blob" style="top:-160px;left:-100px"></span>
+      <div class="wrap" style="justify-content:center;z-index:2">
+        <div class="idx reveal">04</div>
+        <p class="part-kicker reveal" style="margin-top:18px">Part 4</p>
+        <h2 class="title reveal">Save your work &amp; wrap up</h2>
+      </div>
+    </section>
+
+    <!-- ============ 23 · STEP 7 ============ -->
+    <section class="slide aurora-faint">
+      <div class="brand-logo"></div><div class="pagenum">23 / 28</div>
+      <div class="wrap">
+        <div class="s-head">
+          <p class="kicker reveal">Step 7</p>
+          <h2 class="heading reveal">Commit to GitHub</h2>
+        </div>
+        <div class="prompt reveal" style="margin-bottom:30px">
+          <div class="prompt-tag">▸ Prompt</div>
+          <pre>Commit this to GitHub as a private repo called qlik-automation.</pre>
+        </div>
+        <p class="note reveal" style="margin-bottom:14px"><span class="lbl">What Claude does</span></p>
+        <ul class="blist stagger" style="margin-bottom:30px">
+          <li><span class="ic">🔒</span><span>Confirms your <strong>.env (API key) is excluded</strong> ✅</span></li>
+          <li><span class="ic">🚀</span><span>Creates the <strong>private</strong> repo and pushes your code.</span></li>
+        </ul>
+        <p class="body reveal">Now teammates can <span class="hl">clone it, add their own key, and run the same tools</span>.</p>
+      </div>
+    </section>
+
+    <!-- ============ 24 · YOUR SESSION WILL DIFFER ============ -->
+    <section class="slide aurora-faint">
+      <div class="brand-logo"></div><div class="pagenum">24 / 28</div>
+      <div class="wrap">
+        <div class="s-head">
+          <p class="kicker reveal">Keep in mind</p>
+          <h2 class="heading reveal">Remember: your session will differ</h2>
+        </div>
+        <ul class="blist stagger">
+          <li><span class="ic">🧭</span><span>Claude adapts to your <strong>OS, tenant, app names</strong>, and what it finds.</span></li>
+          <li><span class="ic">💬</span><span>If a step <strong>errors or asks a question</strong> → answer in plain English.</span></li>
+          <li><span class="ic">🔁</span><span><span class="hl">"That didn't work"</span> is a perfectly good prompt — Claude diagnoses and retries.</span></li>
+          <li><span class="ic">🎯</span><span>You don't need to memorize commands; you describe <strong>outcomes</strong>.</span></li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ============ 25 · RECAP ============ -->
+    <section class="slide aurora-faint">
+      <div class="brand-logo"></div><div class="pagenum">25 / 28</div>
+      <div class="wrap">
+        <div class="s-head">
+          <p class="kicker reveal">Recap</p>
+          <h2 class="heading reveal">What you built</h2>
+        </div>
+        <div class="grid grid-2 stagger" style="margin-bottom:34px">
+          <div class="card"><span class="ic">🔌</span><h3>A configurable Qlik REST toolkit</h3><p>One file to switch tenants.</p></div>
+          <div class="card"><span class="ic">🪪</span><h3>A morning reload watchdog</h3><p>With an email summary.</p></div>
+          <div class="card"><span class="ic">🔍</span><h3>A load-script debugger</h3><p>Failures, comparisons, performance.</p></div>
+          <div class="card"><span class="ic">📦</span><h3>A private Git repo</h3><p>Reusable and shareable.</p></div>
+        </div>
+        <p class="lead reveal">All by <span class="hl">describing what you wanted</span>.</p>
+      </div>
+    </section>
+
+    <!-- ============ 26 · GOING FURTHER ============ -->
+    <section class="slide aurora-faint">
+      <div class="brand-logo"></div><div class="pagenum">26 / 28</div>
+      <div class="wrap">
+        <div class="s-head">
+          <p class="kicker reveal">What's next</p>
+          <h2 class="heading reveal">Going further</h2>
+        </div>
+        <ul class="blist stagger" style="margin-bottom:34px">
+          <li><span class="ic">➕</span><span>Add more skills the same way: users, spaces, data connections, app exports, thumbnails…</span></li>
+          <li><span class="ic">🤝</span><span><strong>Share the repo</strong> — teammates reuse your skills instantly.</span></li>
+          <li><span class="ic">📖</span><span>Ask Claude to <strong>explain any file</strong> or <strong>extend any skill</strong>.</span></li>
+        </ul>
+        <div class="tip reveal">🚀 Start every new idea with: <span class="hl">"Help me build a skill that…"</span></div>
+      </div>
+    </section>
+
+    <!-- ============ 27 · CHEAT SHEET ============ -->
+    <section class="slide aurora-faint">
+      <div class="brand-logo"></div><div class="pagenum">27 / 28</div>
+      <div class="wrap">
+        <div class="s-head" style="margin-bottom:30px">
+          <p class="kicker reveal">Reference</p>
+          <h2 class="heading reveal">Cheat sheet — the prompts</h2>
+        </div>
+        <div class="cols" style="gap:40px">
+          <div class="codeblock reveal" style="padding:24px 28px">
+            <pre><span class="k"># Setup</span>
+I've never used Claude Code. Check whether Git and
+Node.js (v20+) are installed; install whatever is
+missing and tell me if I should restart.
+
+<span class="k"># Build the toolkit</span>
+Create a new project ... automating Qlik Cloud
+through its REST API ... Use API-key auth, and
+tell me which file to put my key in.
+
+I copied .env.example to .env and pasted my host
+and key. Test the connection.</pre>
+          </div>
+          <div class="codeblock reveal" style="padding:24px 28px">
+            <pre><span class="k"># Watchdog</span>
+Create a skill I can run every morning that checks
+my scheduled reloads ...
+Run the reload watchdog.
+
+<span class="k"># Debugger</span>
+Create a skill to debug a Qlik load script ...
+(failure / compare / performance)
+Debug the reload for app &lt;app-id&gt;.
+
+<span class="k"># Save</span>
+Commit this to GitHub as a private repo
+called qlik-automation.</pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 28 · Q&A / CLOSING ============ -->
+    <section class="slide closing aurora">
+      <span class="blob" style="top:-160px;right:-120px;background:radial-gradient(circle,rgba(133,249,151,.30),transparent 65%)"></span>
+      <div class="wrap center" style="z-index:2">
+        <div class="title-logo reveal"></div>
+        <p class="kicker reveal">Q&amp;A + Resources</p>
+        <h2 class="big reveal" style="margin-bottom:38px">Thank you — now go<br>automate something 🚀</h2>
+        <ul class="reslist reveal" style="margin:0 auto 40px;text-align:left;display:inline-flex">
+          <li><span class="ic">📘</span>Qlik REST API docs: <span class="peri">qlik.dev</span></li>
+          <li><span class="ic">🧰</span>Your repo: <span class="peri">github.com/&lt;you&gt;/qlik-automation</span></li>
+          <li><span class="ic">🤖</span>Help desk: just ask Claude — <em>"explain this"</em>, <em>"why did that fail?"</em>, <em>"add …"</em></li>
+        </ul>
+        <div class="reveal"><span class="btn">Help me build a skill that…</span></div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- Progress dots (deck chrome) -->
+<div class="progress" id="progress"></div>
+
+<!-- Inline editing controls -->
+<div class="edit-hotzone"></div>
+<button class="edit-toggle" id="editToggle" title="Edit mode (E)">✏️</button>
+<div class="edit-hint" id="editHint">Edit mode — click any text · Ctrl+S to save · E to exit</div>
+
+<script>
+/* ===========================================
+   SLIDE PRESENTATION CONTROLLER
+   Fixed 16:9 stage, scaled to fit the viewport.
+   =========================================== */
+class SlidePresentation {
+  constructor() {
+    this.slides = Array.from(document.querySelectorAll('.slide'));
+    this.current = 0;
+    this.stage = document.getElementById('deckStage');
+    this.buildProgress();
+    this.setupStageScale();
+    this.setupKeyboardNav();
+    this.setupTouchNav();
+    this.setupWheelNav();
+    this.show(0);
+  }
+
+  buildProgress() {
+    const p = document.getElementById('progress');
+    this.slides.forEach((_, i) => {
+      const d = document.createElement('div');
+      d.className = 'pd';
+      d.addEventListener('click', () => this.show(i));
+      p.appendChild(d);
+    });
+    this.dots = Array.from(p.children);
+  }
+
+  /* Scale the whole stage uniformly; letterbox/pillarbox as needed. */
+  setupStageScale() {
+    const scale = () => {
+      const f = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
+      const x = (window.innerWidth - 1920 * f) / 2;
+      const y = (window.innerHeight - 1080 * f) / 2;
+      this.stage.style.transform = `translate(${x}px, ${y}px) scale(${f})`;
+    };
+    scale();
+    window.addEventListener('resize', scale);
+  }
+
+  setupKeyboardNav() {
+    document.addEventListener('keydown', (e) => {
+      if (e.target.getAttribute && e.target.getAttribute('contenteditable')) return;
+      if (['ArrowRight', 'ArrowDown', ' ', 'PageDown'].includes(e.key)) { e.preventDefault(); this.next(); }
+      else if (['ArrowLeft', 'ArrowUp', 'PageUp'].includes(e.key)) { e.preventDefault(); this.prev(); }
+      else if (e.key === 'Home') { this.show(0); }
+      else if (e.key === 'End') { this.show(this.slides.length - 1); }
+    });
+  }
+
+  setupTouchNav() {
+    let x0 = null;
+    document.addEventListener('touchstart', (e) => { x0 = e.touches[0].clientX; }, { passive: true });
+    document.addEventListener('touchend', (e) => {
+      if (x0 === null) return;
+      const dx = e.changedTouches[0].clientX - x0;
+      if (Math.abs(dx) > 50) { dx < 0 ? this.next() : this.prev(); }
+      x0 = null;
+    }, { passive: true });
+  }
+
+  setupWheelNav() {
+    let lock = false;
+    window.addEventListener('wheel', (e) => {
+      if (lock) return;
+      if (Math.abs(e.deltaY) < 24) return;
+      lock = true;
+      e.deltaY > 0 ? this.next() : this.prev();
+      setTimeout(() => lock = false, 700);
+    }, { passive: true });
+  }
+
+  next() { this.show(this.current + 1); }
+  prev() { this.show(this.current - 1); }
+
+  show(i) {
+    this.current = Math.max(0, Math.min(i, this.slides.length - 1));
+    this.slides.forEach((s, k) => {
+      s.classList.toggle('active', k === this.current);
+      s.classList.toggle('visible', k === this.current);
+    });
+    this.dots.forEach((d, k) => d.classList.toggle('on', k === this.current));
+  }
+}
+
+/* ===========================================
+   INLINE EDITOR — JS hover (not CSS ~) + localStorage
+   =========================================== */
+class InlineEditor {
+  constructor() {
+    this.isActive = false;
+    this.toggleBtn = document.getElementById('editToggle');
+    this.hint = document.getElementById('editHint');
+    this.restore();
+    this.wireToggle();
+    this.wireSave();
+  }
+  get key() { return 'qlik-workshop-edits'; }
+
+  wireToggle() {
+    const hotzone = document.querySelector('.edit-hotzone');
+    const btn = this.toggleBtn;
+    let hideTimeout = null;
+    btn.addEventListener('click', () => this.toggle());
+    hotzone.addEventListener('click', () => this.toggle());
+    hotzone.addEventListener('mouseenter', () => { clearTimeout(hideTimeout); btn.classList.add('show'); });
+    hotzone.addEventListener('mouseleave', () => { hideTimeout = setTimeout(() => { if (!this.isActive) btn.classList.remove('show'); }, 400); });
+    btn.addEventListener('mouseenter', () => clearTimeout(hideTimeout));
+    btn.addEventListener('mouseleave', () => { hideTimeout = setTimeout(() => { if (!this.isActive) btn.classList.remove('show'); }, 400); });
+    document.addEventListener('keydown', (e) => {
+      if ((e.key === 'e' || e.key === 'E') && !(e.target.getAttribute && e.target.getAttribute('contenteditable'))) this.toggle();
+    });
+  }
+
+  editableEls() {
+    return document.querySelectorAll('.heading,.kicker,.title-h1,.title-sub,.title-note,.lead,.body,.note,.card h3,.card p,.blist span,.steps span,.sev span,.quote,.callout,.tip,.title,.part-kicker,.big,.reslist li,.prompt pre,.codeblock pre,.agenda .p');
+  }
+
+  toggle() {
+    this.isActive = !this.isActive;
+    this.toggleBtn.classList.toggle('active', this.isActive);
+    this.toggleBtn.classList.toggle('show', this.isActive);
+    this.hint.classList.toggle('show', this.isActive);
+    this.editableEls().forEach(el => {
+      el.setAttribute('contenteditable', this.isActive ? 'true' : 'false');
+      if (!this.isActive) el.removeAttribute('contenteditable');
+    });
+  }
+
+  wireSave() {
+    document.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); this.save(); }
+    });
+  }
+
+  save() {
+    const data = {};
+    this.editableEls().forEach((el, i) => { data[i] = el.innerHTML; });
+    try { localStorage.setItem(this.key, JSON.stringify(data)); this.flash('Saved ✓'); }
+    catch (err) { this.flash('Save failed'); }
+  }
+
+  restore() {
+    try {
+      const raw = localStorage.getItem(this.key);
+      if (!raw) return;
+      const data = JSON.parse(raw);
+      this.editableEls().forEach((el, i) => { if (data[i] !== undefined) el.innerHTML = data[i]; });
+    } catch (err) { /* ignore */ }
+  }
+
+  flash(msg) {
+    this.hint.textContent = msg;
+    this.hint.classList.add('show');
+    setTimeout(() => {
+      if (!this.isActive) this.hint.classList.remove('show');
+      else this.hint.textContent = 'Edit mode — click any text · Ctrl+S to save · E to exit';
+    }, 1200);
+  }
+}
+
+/* ===========================================
+   COPY BUTTONS — one per prompt box
+   Copies the exact prompt text to the clipboard.
+   Falls back to execCommand for file:// (no async clipboard).
+   =========================================== */
+class PromptCopy {
+  constructor() {
+    const icon = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>';
+    document.querySelectorAll('.prompt').forEach(box => {
+      const pre = box.querySelector('pre');
+      if (!pre) return;
+      const btn = document.createElement('button');
+      btn.className = 'copy-btn';
+      btn.type = 'button';
+      btn.setAttribute('aria-label', 'Copy prompt');
+      btn.innerHTML = icon + '<span class="lbl-txt">Copy</span>';
+      btn.addEventListener('click', (e) => { e.stopPropagation(); this.copy(pre, btn); });
+      box.appendChild(btn);
+    });
+  }
+
+  async copy(pre, btn) {
+    const text = pre.textContent.trim();
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        // Fallback for file:// or insecure contexts
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+      }
+      this.flash(btn, 'Copied!');
+    } catch (err) {
+      this.flash(btn, 'Press Ctrl+C');
+    }
+  }
+
+  flash(btn, msg) {
+    const label = btn.querySelector('.lbl-txt');
+    const original = 'Copy';
+    label.textContent = msg;
+    btn.classList.add('copied');
+    clearTimeout(btn._t);
+    btn._t = setTimeout(() => { label.textContent = original; btn.classList.remove('copied'); }, 1600);
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  window.deck = new SlidePresentation();
+  window.editor = new InlineEditor();
+  window.promptCopy = new PromptCopy();
+});
+</script>
+</body>
+</html>
