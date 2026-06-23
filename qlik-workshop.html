@@ -279,6 +279,37 @@ strong, b { color: var(--white); font-weight: 600; }
 .agenda tr.brk .p { color: var(--mint); font-weight: 600; }
 .agenda tr.brk .t { color: var(--mint); }
 
+/* Claude Code UI mockup (modes menu + bottom toolbar) */
+.ui-mock { width: 100%; max-width: 720px; }
+.ui-menu {
+  background: #1b1b1b; border: 1px solid var(--hair); border-radius: 14px;
+  padding: 14px 0; box-shadow: 0 24px 60px rgba(0,0,0,.45);
+}
+.ui-menu-title { color: var(--faint); font-size: 20px; padding: 6px 26px 12px; }
+.ui-opt { display: flex; align-items: center; gap: 16px; padding: 13px 26px; color: var(--white); font-size: 26px; }
+.ui-opt > span:first-child { flex: 1; }
+.ui-opt kbd { color: var(--faint); font-family: var(--font-mono); font-size: 20px; }
+.ui-opt .chk { color: var(--periwinkle); font-size: 22px; }
+.ui-opt.sel { background: rgba(138,157,255,.10); }
+.ui-bar {
+  display: flex; align-items: center; gap: 16px; margin-top: 20px;
+  background: #1b1b1b; border: 1px solid var(--hair); border-radius: 14px; padding: 16px 22px;
+}
+.ui-chip { font-size: 22px; color: var(--muted); }
+.ui-chip.mode { color: var(--amber); font-weight: 600; }
+.ui-ico { color: var(--faint); font-size: 24px; }
+.ui-spacer { flex: 1; }
+.ui-pill { border: 1px solid var(--hair); border-radius: 999px; padding: 6px 16px; font-size: 21px; color: var(--white); }
+
+/* Permission-mode explainer list */
+.modes { list-style: none; display: flex; flex-direction: column; gap: 16px; }
+.modes li { font-size: 25px; line-height: 1.4; color: var(--muted); }
+.modes li b { color: var(--white); font-weight: 600; }
+.modes li b::after { content: " — "; color: var(--faint); font-weight: 400; }
+.modes li.now { border-left: 3px solid var(--periwinkle); padding-left: 16px; margin-left: -19px; }
+.modes li.now b { color: var(--periwinkle); }
+.modes li em { color: var(--periwinkle); font-style: normal; font-weight: 500; }
+
 /* ===========================================
    TITLE & SECTION DIVIDER SLIDES
    =========================================== */
@@ -471,6 +502,47 @@ strong, b { color: var(--white); font-weight: 600; }
       </div>
     </section>
 
+    <!-- ============ MODES, MODEL & EFFORT (after 'How a session flows') ============ -->
+    <section class="slide aurora-faint">
+      <div class="brand-logo"></div><div class="pagenum"></div>
+      <div class="wrap">
+        <div class="s-head">
+          <p class="kicker reveal">Driving Claude Code</p>
+          <h2 class="heading reveal">Modes, model &amp; effort</h2>
+        </div>
+        <div class="cols" style="grid-template-columns:.95fr 1.05fr;gap:56px">
+          <div class="ui-mock reveal">
+            <div class="ui-menu">
+              <div class="ui-menu-title">Mode</div>
+              <div class="ui-opt"><span>Ask permissions</span><kbd>1</kbd></div>
+              <div class="ui-opt"><span>Accept edits</span><kbd>2</kbd></div>
+              <div class="ui-opt"><span>Plan mode</span><kbd>3</kbd></div>
+              <div class="ui-opt sel"><span>Auto mode</span><span class="chk">✓</span><kbd>4</kbd></div>
+              <div class="ui-opt"><span>Bypass permissions</span><kbd>5</kbd></div>
+            </div>
+            <div class="ui-bar">
+              <span class="ui-chip mode">Auto</span>
+              <span class="ui-ico">+</span>
+              <span class="ui-ico">🎤</span>
+              <span class="ui-spacer"></span>
+              <span class="ui-chip ui-pill">Opus 4.8</span>
+              <span class="ui-chip ui-pill">High</span>
+            </div>
+          </div>
+          <ul class="modes stagger">
+            <li><b>Ask permissions</b>approves every action. Safest — best when you want to learn all the technical details.</li>
+            <li><b>Accept edits</b>auto-applies file edits; still asks before running commands.</li>
+            <li><b>Plan mode</b>explores and proposes a plan; changes nothing until you approve.</li>
+            <li class="now"><b>Auto mode</b>runs on its own, pausing only for risky or irreversible actions. <em>What we use today.</em></li>
+            <li><b>Bypass permissions</b>never asks. Only when you fully trust the task.</li>
+          </ul>
+        </div>
+        <div class="tip reveal" style="margin-top:30px">
+          🚀 <strong>Use the strongest model for coding</strong> — <span class="hl">Opus 4.8</span> today (bottom-right). For really hard problems, also raise <strong>effort</strong> above <strong>High</strong>.
+        </div>
+      </div>
+    </section>
+
     <!-- ============ 6 · GROUND RULES ============ -->
     <section class="slide aurora-faint">
       <div class="brand-logo"></div><div class="pagenum">06 / 28</div>
@@ -499,6 +571,7 @@ strong, b { color: var(--white); font-weight: 600; }
         </div>
         <ul class="blist stagger" style="margin-bottom:34px">
           <li><span class="ic">💻</span><span>A laptop (Windows or Mac)</span></li>
+          <li><span class="ic">🔑</span><span><strong>Local admin rights</strong> on that laptop — to install software and run <code>npm</code></span></li>
           <li><span class="ic">🤖</span><span><strong>Claude Code</strong> installed, signed in with your Claude account</span></li>
           <li><span class="ic">🟢</span><span>A <strong>Qlik Cloud</strong> account that can create an <strong>API key</strong></span></li>
           <li><span class="ic">🌐</span><span>Internet access</span></li>
@@ -942,6 +1015,7 @@ class SlidePresentation {
     this.current = 0;
     this.stage = document.getElementById('deckStage');
     this.buildProgress();
+    this.numberPages();
     this.setupStageScale();
     this.setupKeyboardNav();
     this.setupTouchNav();
@@ -958,6 +1032,16 @@ class SlidePresentation {
       p.appendChild(d);
     });
     this.dots = Array.from(p.children);
+  }
+
+  /* Fill each slide's page indicator from its real position — no manual renumbering. */
+  numberPages() {
+    const total = this.slides.length;
+    const pad = (n) => String(n).padStart(2, '0');
+    this.slides.forEach((s, i) => {
+      const pn = s.querySelector('.pagenum');
+      if (pn) pn.textContent = `${pad(i + 1)} / ${pad(total)}`;
+    });
   }
 
   /* Scale the whole stage uniformly; letterbox/pillarbox as needed. */
