@@ -620,23 +620,6 @@ tell me if I need to restart my terminal.</pre>
       </div>
     </section>
 
-    <!-- ============ 10 · PREREQ C ============ -->
-    <section class="slide aurora-faint">
-      <div class="brand-logo"></div><div class="pagenum">10 / 28</div>
-      <div class="wrap">
-        <div class="s-head">
-          <p class="kicker reveal">Prereq C</p>
-          <h2 class="heading reveal">Get your Qlik API key</h2>
-        </div>
-        <ol class="steps stagger" style="margin-bottom:30px">
-          <li><span>Click your <strong>avatar</strong> (top-right) → <strong>Profile settings</strong>.</span></li>
-          <li><span><strong>API keys</strong> → <strong>Generate new key</strong> → <span class="hl">copy it now</span> (shown only once).</span></li>
-          <li><span>Note your <strong>tenant hostname</strong> from the URL, e.g. <code>your-tenant.eu.qlikcloud.com</code>.</span></li>
-        </ol>
-        <div class="tip reveal">💡 <strong>Don't see "API keys"?</strong> A Qlik <strong>admin</strong> needs to enable them for your tenant.</div>
-      </div>
-    </section>
-
     <!-- ============ 11 · PART 1 DIVIDER ============ -->
     <section class="slide divider aurora">
       <span class="blob" style="bottom:-200px;right:-120px;background:radial-gradient(circle,rgba(133,249,151,.32),transparent 65%)"></span>
@@ -667,12 +650,29 @@ tell me exactly which file to put my key in.</pre>
       </div>
     </section>
 
-    <!-- ============ 13 · STEP 2 ============ -->
+    <!-- ============ STEP 2 · GET API KEY (after project scaffold, so .env exists) ============ -->
     <section class="slide aurora-faint">
-      <div class="brand-logo"></div><div class="pagenum">13 / 28</div>
+      <div class="brand-logo"></div><div class="pagenum"></div>
       <div class="wrap">
         <div class="s-head">
           <p class="kicker reveal">Step 2</p>
+          <h2 class="heading reveal">Get your Qlik API key</h2>
+        </div>
+        <ol class="steps stagger" style="margin-bottom:28px">
+          <li><span>In <strong>Qlik Cloud</strong>: click your <strong>avatar</strong> (top-right) → <strong>Profile settings</strong> → <strong>API keys</strong>.</span></li>
+          <li><span><strong>Generate new key</strong> and name it <span class="hl">"Claude Qlik Automation"</span> — a dedicated key you can revoke anytime without affecting anything else.</span></li>
+          <li><span><strong>Copy it now</strong> (shown only once) and note your <strong>tenant hostname</strong>, e.g. <code>your-tenant.eu.qlikcloud.com</code>.</span></li>
+        </ol>
+        <div class="tip reveal">💡 You'll paste it straight into your <code>.env</code> in the next step. <strong>Don't see "API keys"?</strong> A Qlik <strong>admin</strong> needs to enable them for your tenant.</div>
+      </div>
+    </section>
+
+    <!-- ============ STEP 3 · ADD KEY & CONNECT ============ -->
+    <section class="slide aurora-faint">
+      <div class="brand-logo"></div><div class="pagenum"></div>
+      <div class="wrap">
+        <div class="s-head">
+          <p class="kicker reveal">Step 3</p>
           <h2 class="heading reveal">Add your key &amp; connect</h2>
         </div>
         <div class="cols" style="gap:48px">
@@ -728,7 +728,7 @@ host and API key. Run a quick test to confirm it connects.</pre>
       <div class="brand-logo"></div><div class="pagenum">16 / 28</div>
       <div class="wrap">
         <div class="s-head">
-          <p class="kicker reveal">Step 3</p>
+          <p class="kicker reveal">Step 4</p>
           <h2 class="heading reveal">Build the watchdog</h2>
         </div>
         <div class="prompt reveal" style="margin-bottom:30px">
@@ -748,7 +748,7 @@ issues only, and draft me an email summary.</pre>
       <div class="brand-logo"></div><div class="pagenum">17 / 28</div>
       <div class="wrap">
         <div class="s-head">
-          <p class="kicker reveal">Step 4</p>
+          <p class="kicker reveal">Step 5</p>
           <h2 class="heading reveal">Run the watchdog</h2>
         </div>
         <div class="cols" style="gap:48px;grid-template-columns:.9fr 1.1fr">
@@ -806,7 +806,7 @@ and email me the summary.</pre>
       <div class="brand-logo"></div><div class="pagenum">20 / 28</div>
       <div class="wrap">
         <div class="s-head">
-          <p class="kicker reveal">Step 5</p>
+          <p class="kicker reveal">Step 6</p>
           <h2 class="heading reveal">Build the debugger</h2>
         </div>
         <div class="prompt reveal" style="margin-bottom:30px">
@@ -826,7 +826,7 @@ per table. Add an option to only analyze the latest run for performance.</pre>
       <div class="brand-logo"></div><div class="pagenum">21 / 28</div>
       <div class="wrap">
         <div class="s-head">
-          <p class="kicker reveal">Step 6</p>
+          <p class="kicker reveal">Step 7</p>
           <h2 class="heading reveal">Use it</h2>
         </div>
         <p class="body reveal" style="margin-bottom:26px">Find an <strong>app ID</strong> (copy it from the Qlik app's URL, or ask Claude to list your apps).</p>
@@ -867,7 +867,7 @@ per table. Add an option to only analyze the latest run for performance.</pre>
       <div class="brand-logo"></div><div class="pagenum">23 / 28</div>
       <div class="wrap">
         <div class="s-head">
-          <p class="kicker reveal">Step 7</p>
+          <p class="kicker reveal">Step 8</p>
           <h2 class="heading reveal">Commit to GitHub</h2>
         </div>
         <div class="prompt reveal" style="margin-bottom:30px">
