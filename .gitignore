@@ -1,3 +1,10 @@
 localhost.key
 localhost.crt
 __pycache__/
+
+# Generated static snapshots. These bake rendered Qlik data into images with
+# NO authentication gate: figures, forecasts and named customers are visible
+# to anyone who opens the file. This repo is public - never commit them.
+# See QLIK-TEMPLATES.md, "Before you publish anything".
+*.static.html
+*.static-assets/
