@@ -24,6 +24,24 @@ function cubeFlags(cube) {
   };
 }
 
+/** Inter-record functions that only work inside a pivot table: in the
+ * straight table the workbench fetches they return NULL. */
+const PIVOT_ONLY = /\b(Before|After|First|Last|ColumnNo|NoOfColumns)\s*\(/i;
+
+/** The first pivot-only function a pivot object's measures use, or null. */
+function pivotOnlyFunction(cube, masterMeasures) {
+  for (const m of cube.qMeasures) {
+    const { label, ...defs } = m;
+    const texts = strings(defs);
+    if (m.qLibraryId) texts.push(String(masterMeasures?.[m.qLibraryId]?.expression ?? ""));
+    for (const s of texts) {
+      const hit = PIVOT_ONLY.exec(s);
+      if (hit) return hit[1];
+    }
+  }
+  return null;
+}
+
 /** @param {any} inventory output of buildInventory */
 export function draftSpec(inventory) {
   const scopes = {};
@@ -47,6 +65,11 @@ export function draftSpec(inventory) {
       if (cube.unsupported?.length) {
         throw new Error(`object ${objectId}: unsupported hypercube propert${cube.unsupported.length > 1 ? "ies" : "y"} ` +
           `${cube.unsupported.join(", ")}; the workbench cannot reproduce its data faithfully`);
+      }
+      const pivotOnly = obj.pivot ? pivotOnlyFunction(cube, app.masterItems.measures) : null;
+      if (pivotOnly) {
+        throw new Error(`object ${objectId}${obj.title ? ` ("${obj.title}")` : ""}: a measure uses ${pivotOnly}(), which works ` +
+          "only inside a pivot table; the workbench fetches pivots as straight tables, where it returns NULL");
       }
       const id = `d${section.index}_${objectId}`.replace(/[^A-Za-z0-9_-]/g, "_");
       const sort = normalizeSort(cube.qInterColumnSortOrder, cube.qDimensions.length + cube.qMeasures.length);
@@ -119,7 +142,8 @@ function strings(value, out = []) {
  * Why a dataset must stay alone, or null when it may merge: a measure (or
  * its resolved master measure) uses a chart-relative function, a master
  * measure is unresolved, a dimension has a limit (ranked by the first
- * measure), or zero suppression is on (it depends on all measures).
+ * measure), zero suppression is on (it depends on all measures), or a
+ * measure expands a variable ("$(vX)" may hide any of these functions).
  */
 export function mergeBlocker(ds) {
   if (ds.flags?.suppressZero) return "suppress-zero";
@@ -127,7 +151,9 @@ export function mergeBlocker(ds) {
   for (const m of ds.measures) {
     if (m.qLibraryId && typeof m.masterExpression !== "string") return `unresolved master measure ${m.qLibraryId}`;
     const { label, ...defs } = m;
-    if (strings(defs).some((s) => CHART_RELATIVE.test(s))) return "chart-relative function";
+    const texts = strings(defs);
+    if (texts.some((s) => s.includes("$("))) return "dollar-sign expansion";
+    if (texts.some((s) => CHART_RELATIVE.test(s))) return "chart-relative function";
   }
   return null;
 }

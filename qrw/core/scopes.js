@@ -49,8 +49,8 @@ export function readSelections(doc) {
     for (const s of layout.qSelectionObject?.qSelections || []) {
       let values = (s.qSelectedFieldSelectionInfo || []).map((i) => i.qName);
       // The value list can stop short of the count (selection threshold):
-      // read the complete set (GetFieldSelections, max values = the count).
-      if (values.length < s.qSelectedCount) values = await allSelectedValues(doc, s.qField, s.qSelectedCount);
+      // read the complete set from the field itself.
+      if (values.length < s.qSelectedCount) values = (await selectedCells(doc, s.qField, s.qSelectedCount)).map((c) => c.qText);
       out[s.qField] = {
         count: s.qSelectedCount, values,
         ...(s.qLocked ? { locked: true } : {}), ...(s.qOneAndOnlyOne ? { oneAndOnlyOne: true } : {}),
@@ -60,17 +60,47 @@ export function readSelections(doc) {
   });
 }
 
-const SEP = "\u0001";
+/** Selected states of a list object cell (selected, locked, and both while
+ * excluded by another field). */
+const SELECTED_STATES = new Set(["S", "L", "XS", "XL"]);
+const PAGE_ROWS = 5000;
 
-/** Every selected value of a field as text, through GetFieldSelections. */
-async function allSelectedValues(doc, field, count) {
-  const name = `[${String(field).replace(/]/g, "]]")}]`;
-  const r = await doc.evaluateEx(`GetFieldSelections(${name}, chr(1), ${count})`);
-  const text = String((r?.qValue ?? r)?.qText ?? "");
-  return text ? text.split(SEP) : [];
+/**
+ * The selected values of a field as structured cells {qText, qNum}: a
+ * session list object sorted by state (selected first), paged until `count`
+ * selected values are read. Never parses a display string, so any value
+ * text (separators included) survives.
+ * https://qlik.dev/apis/json-rpc/qix/genericobject/#getlistobjectdata
+ */
+export function selectedCells(doc, field, count) {
+  return withSessionObject(doc, {
+    qInfo: { qType: "qrw-field-selected" },
+    qListObjectDef: { qDef: { qFieldDefs: [field], qSortCriterias: [{ qSortByState: 1 }] }, qInitialDataFetch: [] },
+  }, async (obj) => {
+    const layout = await obj.getLayout();
+    const total = layout.qListObject?.qSize?.qcy ?? 0;
+    /** @type {{qText: string, qNum: number|null}[]} */
+    const out = [];
+    for (let top = 0; top < total && out.length < count; top += PAGE_ROWS) {
+      const [page] = await obj.getListObjectData("/qListObjectDef", [{ qTop: top, qLeft: 0, qWidth: 1, qHeight: PAGE_ROWS }]);
+      const rows = page?.qMatrix || [];
+      for (const [c] of rows) {
+        if (c && SELECTED_STATES.has(c.qState)) out.push({ qText: c.qText ?? "", qNum: typeof c.qNum === "number" ? c.qNum : null });
+      }
+      if (!rows.length) break;
+    }
+    return out;
+  });
 }
 
 const sameSet = (a, b) => a.size === b.size && [...a].every((v) => b.has(v));
+
+/** A selectValues result that reports a rejected selection. */
+const rejected = (r) => r === false || r?.qReturn === false;
+
+/** A selected cell is the requested value: same text, or same number for a
+ * numeric request (duals such as a quarter "Q3" with the number 3). */
+const isValue = (cell, v) => cell.qText === String(v) || (isNumericValue(v) && cell.qNum === Number(v));
 
 /**
  * Unlock and clear the default state, select every field and verify. A
@@ -99,14 +129,17 @@ export function applySelections(doc, selections) {
     for (const sel of selections) {
       const field = await doc.getField(sel.field);
       const expected = expectedCount(sel);
-      await field.selectValues(toFieldValues(sel.values), false, false);
+      let ok = !rejected(await field.selectValues(toFieldValues(sel.values), false, false));
       let now = (await readSelections(doc))[sel.field];
-      if ((now?.count ?? 0) !== expected && sel.values.some(isNumericValue)) {
+      if ((!ok || (now?.count ?? 0) !== expected) && sel.values.some(isNumericValue)) {
         await field.clear();
-        await field.selectValues(toFieldValues(sel.values, true), false, false);
+        ok = !rejected(await field.selectValues(toFieldValues(sel.values, true), false, false));
         now = (await readSelections(doc))[sel.field];
-        if ((now?.count ?? 0) === expected) retried.push(sel.field);
+        if (ok && (now?.count ?? 0) === expected) retried.push(sel.field);
       }
+      // A rejected select (e.g. on an "always one selected value" field) can
+      // leave the old value selected with the right count: never accept it.
+      if (!ok) throw new Error(`selection failed: the engine rejected field "${sel.field}" values ${JSON.stringify(sel.values)}`);
       if ((now?.count ?? 0) !== expected) throw fail(sel, now?.count ?? 0, "");
       produced.set(sel.field, new Set(now.values));
     }
@@ -117,6 +150,14 @@ export function applySelections(doc, selections) {
       if (!sameSet(new Set(got.values), /** @type {Set<string>} */ (produced.get(sel.field)))) {
         throw new Error(`selection failed (changed after later selections): field "${sel.field}" values ` +
           `${JSON.stringify(sel.values)} now selects ${JSON.stringify(got.values)}`);
+      }
+      // The right number of values is not enough: each requested value must
+      // be one of the selected ones (by text, or by number when numeric).
+      const cells = await selectedCells(doc, sel.field, got.count);
+      const missing = [...new Set(sel.values.map(String))].filter((v) => !cells.some((c) => isValue(c, v)));
+      if (missing.length) {
+        throw new Error(`selection failed (other values selected): field "${sel.field}" values ` +
+          `${JSON.stringify(sel.values)} selects ${JSON.stringify(cells.map((c) => c.qText))}`);
       }
     }
     const requested = new Set(selections.map((s) => s.field));

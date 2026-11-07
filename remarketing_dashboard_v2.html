@@ -318,10 +318,29 @@ main.is-loading .tools, main.is-loading .qlink { visibility: hidden; }
 
   var CACHE_DB = "qrw-cache";
   var CACHE_STORE = "payloads";
+  /** Upper bound of one cache operation: a stuck IndexedDB never holds up live data. */
+  var CACHE_TIMEOUT_MS = 1500;
 
-  /** A tiny promise wrapper over one IndexedDB object store. Every failure
-   * rejects; callers treat that as "no cache". */
-  function openCache(factory) {
+  /** FNV-1a (32 bit) of a string, as hex, plus its length: a compact spec id. */
+  function hash(text) {
+    var h = 0x811c9dc5;
+    for (var i = 0; i < text.length; i++) {
+      h ^= text.charCodeAt(i);
+      h = Math.imul(h, 0x01000193) >>> 0;
+    }
+    return ("0000000" + h.toString(16)).slice(-8) + "-" + text.length;
+  }
+
+  /** A tiny promise wrapper over one IndexedDB object store. Every failure,
+   * and every operation that has not settled within `timeoutMs`, rejects;
+   * callers treat that as "no cache". */
+  function openCache(factory, timeoutMs, timers) {
+    function bounded(promise) {
+      return new Promise(function (resolve, reject) {
+        var timer = timers.setTimeout(function () { reject(new Error("QRW: cache operation timed out")); }, timeoutMs);
+        promise.then(function (v) { timers.clearTimeout(timer); resolve(v); }, function (e) { timers.clearTimeout(timer); reject(e); });
+      });
+    }
     function open() {
       return new Promise(function (resolve, reject) {
         var req = factory.open(CACHE_DB, 1);
@@ -341,8 +360,9 @@ main.is-loading .tools, main.is-loading .qlink { visibility: hidden; }
       });
     }
     return {
-      get: function (key) { return run("readonly", function (s) { return s.get(key); }); },
-      put: function (key, value) { return run("readwrite", function (s) { return s.put(value, key); }); },
+      get: function (key) { return bounded(run("readonly", function (s) { return s.get(key); })); },
+      put: function (key, value) { return bounded(run("readwrite", function (s) { return s.put(value, key); })); },
+      del: function (key) { return bounded(run("readwrite", function (s) { return s.delete(key); })); },
     };
   }
 
@@ -446,36 +466,57 @@ main.is-loading .tools, main.is-loading .qlink { visibility: hidden; }
     function cacheStore() {
       var c = api.cache;
       if (!c || !c.key) return null;
-      try { return env.indexedDB ? openCache(env.indexedDB) : null; } catch (e) { return null; }
+      var timers = { setTimeout: env.setTimeout || setTimeout, clearTimeout: env.clearTimeout || clearTimeout };
+      try { return env.indexedDB ? openCache(env.indexedDB, CACHE_TIMEOUT_MS, timers) : null; } catch (e) { return null; }
     }
 
-    /** The cached live payload for this config, or null (missing, expired,
-     * another spec, or no usable IndexedDB). */
-    function readCache(config) {
+    /** The entry key: the page's key, the signed-in viewer (effective host
+     * and user id, as the live adapter verified them) and the spec. No
+     * verified identity: no key, so no cache read or write. */
+    function cacheKey(config, identity) {
+      if (!identity || !identity.host || !identity.userId) return null;
+      return JSON.stringify([String(api.cache.key), String(identity.host).toLowerCase(), String(identity.userId),
+        hash(JSON.stringify(config.spec || null))]);
+    }
+
+    /** The cached live payload of this viewer and config, or null (missing,
+     * expired, another spec, no identity, or no usable IndexedDB). */
+    function readCache(config, identity) {
       var store = cacheStore();
-      if (!store) return Promise.resolve(null);
+      var key = store && cacheKey(config, identity);
+      if (!key) return Promise.resolve(null);
       var maxAge = (Number(api.cache.maxAgeHours) > 0 ? Number(api.cache.maxAgeHours) : 24) * 3600 * 1000;
-      return store.get(String(api.cache.key)).then(function (entry) {
-        if (!entry || !entry.payload || entry.spec !== JSON.stringify(config.spec || null)) return null;
+      return store.get(key).then(function (entry) {
+        if (!entry || !entry.payload || entry.key !== key) return null;
         if (!(Date.now() - entry.savedAt <= maxAge)) return null;
         return entry;
       }).catch(function () { return null; });
     }
 
-    function writeCache(config, payload) {
+    function writeCache(config, identity, payload) {
       var store = cacheStore();
-      if (!store) return Promise.resolve(false);
-      return store.put(String(api.cache.key), { savedAt: Date.now(), spec: JSON.stringify(config.spec || null), payload: payload })
+      var key = store && cacheKey(config, identity);
+      if (!key) return Promise.resolve(false);
+      return store.put(key, { key: key, savedAt: Date.now(), payload: payload })
         .then(function () { return true; }, function () { return false; });
+    }
+
+    function deleteCache(config, identity) {
+      var store = cacheStore();
+      var key = store && cacheKey(config, identity);
+      if (!key) return Promise.resolve(false);
+      return store.del(key).then(function () { return true; }, function () { return false; });
     }
 
     /**
      * Resolve {meta, datasets}: the embedded snapshot when baked, else the
      * live adapter when the page configures one. `opts.onDataset(id,
      * dataset)` is called for each dataset as it arrives (live: one by one;
-     * snapshot: all at once). With QRW.cache set, a live page first shows
-     * the last cached live result (meta.mode "cached"), then swaps in live
-     * data. Emits loading/cached/dataset/ready/error.
+     * snapshot: all at once). With QRW.cache set, a live page shows the
+     * last cached live result of the SAME viewer (meta.mode "cached") once
+     * the live adapter has verified who is signed in (hooks.onIdentity),
+     * then swaps in live data. A failed live load deletes that viewer's
+     * entry. Emits loading/cached/dataset/ready/error.
      * @param {{onDataset?: (id: string, dataset: any) => void}} [opts]
      */
     api.load = function (opts) {
@@ -487,8 +528,23 @@ main.is-loading .tools, main.is-loading .qlink { visibility: hidden; }
         emit("dataset", { id: id, dataset: ds });
         settleWaiters();
       }
+      var identity = null;
       var hooks = {
         priority: api.priority,
+        /** The adapter's verified viewer {host, userId}: only now may the
+         * cache be read. Resolves true when a cached result was shown. */
+        onIdentity: function (who) {
+          if (!who || !who.host || !who.userId) return Promise.resolve(false);
+          identity = { host: String(who.host), userId: String(who.userId) };
+          return readCache(live, identity).then(function (entry) {
+            if (!entry || finished || loadError || Object.keys(arrived).length) return false;
+            var meta = Object.assign({}, entry.payload.meta, { mode: "cached", cachedAt: new Date(entry.savedAt).toISOString() });
+            api.data = { meta: meta, datasets: Object.assign({}, entry.payload.datasets) };
+            emit("cached", api.data);
+            Object.keys(api.data.datasets).forEach(function (id) { deliver(id, api.data.datasets[id]); });
+            return true;
+          });
+        },
         onMeta: function (meta) {
           if (!(api.data && api.data.meta.mode === "cached")) api.data = { meta: Object.assign({}, meta), datasets: {} };
         },
@@ -508,15 +564,7 @@ main.is-loading .tools, main.is-loading .qlink { visibility: hidden; }
         if (data) return data;
         live = liveConfig();
         if (!live) throw new Error("QRW: no embedded data (template not baked) and no live config");
-        return readCache(live).then(function (entry) {
-          if (entry) {
-            var meta = Object.assign({}, entry.payload.meta, { mode: "cached", cachedAt: new Date(entry.savedAt).toISOString() });
-            api.data = { meta: meta, datasets: Object.assign({}, entry.payload.datasets) };
-            emit("cached", api.data);
-            Object.keys(api.data.datasets).forEach(function (id) { deliver(id, api.data.datasets[id]); });
-          }
-          return waitForAdapter();
-        }).then(function (a) { return a(live, hooks); });
+        return waitForAdapter().then(function (a) { return a(live, hooks); });
       }).then(function (data) {
         if (!data || !data.meta || !data.datasets) throw new Error("QRW: data has no meta/datasets");
         api.data = data;
@@ -525,11 +573,19 @@ main.is-loading .tools, main.is-loading .qlink { visibility: hidden; }
         });
         finished = true;
         settleWaiters();
-        if (live && data.meta.mode === "live") writeCache(live, data);
+        if (live && data.meta.mode === "live") writeCache(live, identity, data);
         emit("ready", data);
         return data;
-      }, function (e) {
+      }).catch(function (e) {
+        // Terminal: any failure above (adapter, payload check, a delivery)
+        // emits error and rejects every pending when().
         loadError = e;
+        if (live) {
+          // A denied or failed live load never leaves this viewer's cached
+          // figures on screen or in storage.
+          if (api.data && api.data.meta && api.data.meta.mode === "cached") api.data = null;
+          deleteCache(live, identity);
+        }
         settleWaiters();
         emit("error", e);
         throw e;
@@ -636,10 +692,10 @@ main.is-loading .tools, main.is-loading .qlink { visibility: hidden; }
       return title + "-snapshot-" + at + ".html";
     }
 
-    /** True for a script URL that works from a saved file anywhere:
-     * absolute http(s), protocol-relative or a data: URL. */
+    /** True for a script URL that works from a saved file anywhere: absolute
+     * http(s) or a data: URL (a protocol-relative one is rewritten first). */
     function portableSrc(src) {
-      return /^(https?:)?\/\//i.test(src) || /^data:/i.test(src);
+      return /^https?:\/\//i.test(src) || /^data:/i.test(src);
     }
 
     /**
@@ -648,8 +704,10 @@ main.is-loading .tools, main.is-loading .qlink { visibility: hidden; }
      * itself (never a text search over the page, which an inlined runtime
      * would confuse). The live config (#qrw-live) and the live adapter
      * script (src containing "qrw-live-qix", or data-qrw-live) are dropped:
-     * a snapshot never signs in. Any other script loaded by a relative URL
-     * is refused: the saved file would not be self-contained.
+     * a snapshot never signs in. A protocol-relative script URL ("//cdn...")
+     * becomes https: (opened from disk it would resolve to file://). Any
+     * other script loaded by a relative URL is refused: the saved file would
+     * not be self-contained.
      */
     api.staticHtml = function () {
       var data = need();
@@ -663,7 +721,8 @@ main.is-loading .tools, main.is-loading .qlink { visibility: hidden; }
       var scripts = clone.querySelectorAll("script[src]");
       var relative = [];
       for (var j = 0; j < scripts.length; j++) {
-        var src = scripts[j].getAttribute("src") || "";
+        var src = (scripts[j].getAttribute("src") || "").trim();
+        if (/^\/\//.test(src)) { src = "https:" + src; scripts[j].setAttribute("src", src); }
         if (!portableSrc(src)) relative.push(src);
       }
       if (relative.length) {

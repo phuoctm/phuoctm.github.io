@@ -51,15 +51,25 @@ export function oauthHostConfig(config) {
  * the original ids this dataset serves, or null). `hooks.priority` (the
  * page's QRW.priority) or `config.priority` overrides the fetch order;
  * `config.firstWaveTimeoutMs` / `config.maxConcurrent` tune it.
+ * Before anything else, `deps.whoami()` reads the signed-in user's id from
+ * the tenant and `hooks.onIdentity({host, userId})` receives it (awaited):
+ * the runtime keys its per-viewer cache by it. No id (no whoami, a failure
+ * or an empty answer): onIdentity is not called, so nothing is cached.
  * @param {LiveConfig} config
- * @param {{openAppSession: (props: any) => any, onCloseErrors?: (errors: any[]) => void}} deps
+ * @param {{openAppSession: (props: any) => any, onCloseErrors?: (errors: any[]) => void,
+ *   whoami?: () => Promise<string|null|undefined>}} deps
  * @param {{onMeta?: (meta: any) => void, onDataset?: (id: string, dataset: any, columnMap: any) => void,
- *   priority?: any}} [hooks]
+ *   onIdentity?: (who: {host: string, userId: string}) => any, priority?: any}} [hooks]
  */
-export async function runLive(config, { openAppSession, onCloseErrors = () => {} }, hooks = {}) {
+export async function runLive(config, { openAppSession, onCloseErrors = () => {}, whoami }, hooks = {}) {
   if (!config?.spec?.scopes || !Array.isArray(config.spec.datasets)) throw new Error('live config needs a "spec" with scopes and datasets');
   const hostConfig = oauthHostConfig(config);
   const spec = { ...config.spec, host: hostConfig.host };
+  if (whoami && hooks.onIdentity) {
+    let userId = null;
+    try { userId = await whoami(); } catch { userId = null; }
+    if (userId) await hooks.onIdentity({ host: hostConfig.host, userId: String(userId) });
+  }
   const pool = createSessionPool(hostConfig, { openAppSession, identityPrefix: "qrw-live" });
   let data;
   try {
@@ -99,6 +109,9 @@ export function register(qrw, { load = loadQlikApi } = {}) {
     api.auth.setDefaultHostConfig(hostConfig);
     return runLive(config, {
       openAppSession: (props) => api.qix.openAppSession(props),
+      // GET /api/v1/users/me with the session's own sign-in.
+      // https://qlik.dev/apis/rest/users/#get-api-v1-users-me
+      whoami: async () => (await api.users.getMyUser())?.data?.id ?? null,
       onCloseErrors: (errors) => console.warn("qrw: closing a session failed", errors),
     }, hooks);
   });
