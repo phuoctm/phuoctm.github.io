@@ -87,6 +87,18 @@
     var adapterWaiters = [];
     var api = {};
 
+    // The page's own scripts and styles, recorded once the document is parsed:
+    // anything added later (a library injecting its loader) is not the page's.
+    var originals = typeof WeakSet === "function" ? new WeakSet() : null;
+    var ORIGINAL_SELECTOR = "script, link, style, meta, base, #qrw-data, #qrw-live";
+    function markOriginals() {
+      if (!originals || !doc || !doc.querySelectorAll) return;
+      var found = doc.querySelectorAll(ORIGINAL_SELECTOR);
+      for (var i = 0; i < found.length; i++) originals.add(found[i]);
+    }
+    if (doc && doc.readyState === "loading" && doc.addEventListener) doc.addEventListener("DOMContentLoaded", markOriginals);
+    else markOriginals();
+
     function emit(type, detail) {
       (listeners[type] || []).slice().forEach(function (fn) {
         try { fn(detail); } catch (e) { /* a listener's bug never breaks loading */ }
@@ -426,6 +438,32 @@
       var slot = clone.querySelector("#qrw-data");
       if (!slot) throw new Error("QRW: the page has no qrw-data script element to embed into");
       slot.textContent = scriptJson(payload);
+      // Runtime-injected scripts and styles (SystemJS, embed loaders) are not
+      // the page's: walk the live document and the clone in the same order.
+      var CODE_SELECTOR = "script, link, style";
+      var liveEls = doc.documentElement.querySelectorAll(CODE_SELECTOR);
+      var cloneEls = clone.querySelectorAll(CODE_SELECTOR);
+      var cfg = null;
+      try { cfg = liveConfig(); } catch (e) { cfg = null; }
+      var tenant = cfg && cfg.host ? String(cfg.host).replace(/^https?:\/\//i, "").replace(/\/.*$/, "").toLowerCase() : "";
+      var stale = [];
+      for (var k = 0; k < cloneEls.length; k++) {
+        var node = cloneEls[k];
+        var tag = String(node.tagName).toLowerCase();
+        var isOriginal = !originals || (liveEls.length === cloneEls.length && originals.has(liveEls[k]));
+        var injected = !isOriginal;
+        if (tag === "link") {
+          var rel = String(node.getAttribute("rel") || "").toLowerCase().split(/\s+/);
+          if (!rel.some(function (r) { return r === "stylesheet" || r === "modulepreload" || r === "preload"; })) injected = false;
+        }
+        if (tag === "script") {
+          var m = /^(?:https?:)?\/\/([^/?#:]+)/i.exec((node.getAttribute("src") || "").trim());
+          var host = m ? m[1].toLowerCase() : "";
+          if (host && (host === "cdn.qlikcloud.com" || (tenant && host === tenant))) injected = true;
+        }
+        if (injected) stale.push(node);
+      }
+      stale.forEach(function (n) { if (n.parentNode) n.parentNode.removeChild(n); });
       var drop = clone.querySelectorAll("#qrw-live, script[data-qrw-live], script[src*='qrw-live-qix']");
       for (var i = 0; i < drop.length; i++) drop[i].parentNode.removeChild(drop[i]);
       var scripts = clone.querySelectorAll("script[src]");

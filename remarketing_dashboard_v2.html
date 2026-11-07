@@ -377,6 +377,18 @@ main.is-loading .tools, main.is-loading .qlink { visibility: hidden; }
     var adapterWaiters = [];
     var api = {};
 
+    // The page's own scripts and styles, recorded once the document is parsed:
+    // anything added later (a library injecting its loader) is not the page's.
+    var originals = typeof WeakSet === "function" ? new WeakSet() : null;
+    var ORIGINAL_SELECTOR = "script, link, style, meta, base, #qrw-data, #qrw-live";
+    function markOriginals() {
+      if (!originals || !doc || !doc.querySelectorAll) return;
+      var found = doc.querySelectorAll(ORIGINAL_SELECTOR);
+      for (var i = 0; i < found.length; i++) originals.add(found[i]);
+    }
+    if (doc && doc.readyState === "loading" && doc.addEventListener) doc.addEventListener("DOMContentLoaded", markOriginals);
+    else markOriginals();
+
     function emit(type, detail) {
       (listeners[type] || []).slice().forEach(function (fn) {
         try { fn(detail); } catch (e) { /* a listener's bug never breaks loading */ }
@@ -716,6 +728,32 @@ main.is-loading .tools, main.is-loading .qlink { visibility: hidden; }
       var slot = clone.querySelector("#qrw-data");
       if (!slot) throw new Error("QRW: the page has no qrw-data script element to embed into");
       slot.textContent = scriptJson(payload);
+      // Runtime-injected scripts and styles (SystemJS, embed loaders) are not
+      // the page's: walk the live document and the clone in the same order.
+      var CODE_SELECTOR = "script, link, style";
+      var liveEls = doc.documentElement.querySelectorAll(CODE_SELECTOR);
+      var cloneEls = clone.querySelectorAll(CODE_SELECTOR);
+      var cfg = null;
+      try { cfg = liveConfig(); } catch (e) { cfg = null; }
+      var tenant = cfg && cfg.host ? String(cfg.host).replace(/^https?:\/\//i, "").replace(/\/.*$/, "").toLowerCase() : "";
+      var stale = [];
+      for (var k = 0; k < cloneEls.length; k++) {
+        var node = cloneEls[k];
+        var tag = String(node.tagName).toLowerCase();
+        var isOriginal = !originals || (liveEls.length === cloneEls.length && originals.has(liveEls[k]));
+        var injected = !isOriginal;
+        if (tag === "link") {
+          var rel = String(node.getAttribute("rel") || "").toLowerCase().split(/\s+/);
+          if (!rel.some(function (r) { return r === "stylesheet" || r === "modulepreload" || r === "preload"; })) injected = false;
+        }
+        if (tag === "script") {
+          var m = /^(?:https?:)?\/\/([^/?#:]+)/i.exec((node.getAttribute("src") || "").trim());
+          var host = m ? m[1].toLowerCase() : "";
+          if (host && (host === "cdn.qlikcloud.com" || (tenant && host === tenant))) injected = true;
+        }
+        if (injected) stale.push(node);
+      }
+      stale.forEach(function (n) { if (n.parentNode) n.parentNode.removeChild(n); });
       var drop = clone.querySelectorAll("#qrw-live, script[data-qrw-live], script[src*='qrw-live-qix']");
       for (var i = 0; i < drop.length; i++) drop[i].parentNode.removeChild(drop[i]);
       var scripts = clone.querySelectorAll("script[src]");
@@ -900,7 +938,7 @@ function boot(DATA) {
     `<span class="mode">${META.mode === "live" ? "Live" : "Snapshot"}</span><br>` +
     `Data from Qlik, <strong>${esc(when)}</strong><br>` +
     `${META.queryCount ?? Object.keys(DATA.datasets).length} queries in ${nf1.format((META.totalMs ?? 0) / 1000)} s` +
-    (META.pageMs ? `, page ready in ${nf1.format(META.pageMs / 1000)} s` : "") + `<br>` +
+    (META.pageMs && META.mode === "live" ? `, page ready in ${nf1.format(META.pageMs / 1000)} s` : "") + `<br>` +
     `<button type="button" class="save" id="save-static">Save as HTML file</button><span class="saved" id="save-msg" role="status"></span>`;
   document.getElementById("save-static").addEventListener("click", async () => {
     const msg = document.getElementById("save-msg");
@@ -1130,7 +1168,18 @@ function boot(DATA) {
     `<p>Open the source sheets with the same selections:</p><ul>` +
     SECTIONS.map((s) => `<li><a href="${esc(s.analysis || "#")}" target="_blank" rel="noopener">${esc(s.title || "Sheet " + (s.index + 1))}</a></li>`).join("") + `</ul>`;
 
-  function drawAll() { drawVolume(); drawPrice(); drawOrders(); drawStock(); }
+  /* Each part draws on its own: one failure (or a missing chart library) never blanks the rest. */
+  function drawAll() {
+    for (const [name, fn] of [["volume", drawVolume], ["price", drawPrice], ["orders", drawOrders], ["stock", drawStock]]) {
+      try { fn(); } catch (e) {
+        console.error(`qrw report: ${name} failed`, e);
+        const sec = document.getElementById(`sec-${name}`);
+        sec?.querySelectorAll(".chart").forEach((c) => {
+          if (!c.querySelector("svg")) c.innerHTML = `<p class="unavail">${typeof echarts === "undefined" ? "The chart library did not load, so this chart cannot be drawn." : "This chart could not be drawn."}</p>`;
+        });
+      }
+    }
+  }
   drawAll();
   addEventListener("resize", () => Object.values(charts).forEach((c) => c.resize()));
   const redraw = () => { Object.values(charts).forEach((c) => c.dispose()); for (const k in charts) delete charts[k]; drawAll(); };
